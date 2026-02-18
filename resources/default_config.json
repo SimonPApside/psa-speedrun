@@ -1,0 +1,16 @@
+{
+    "workHours": 8,
+    "restTime": 1,
+    "defaultActivity": "PROJET",
+    "defaultProject": "",
+    "monday": "NA",
+    "mondayExtra": "NONE",
+    "tuesday": "NA",
+    "tuesdayExtra": "NONE",
+    "wednesday": "NA",
+    "wednesdayExtra": "NONE",
+    "thursday": "NA",
+    "thursdayExtra": "NONE",
+    "friday": "NA",
+    "fridayExtra": "NONE"
+}

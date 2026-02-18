@@ -1,0 +1,146 @@
+{
+    "inputs": [
+        {
+            "name": "Maladie",
+            "type": "row",
+            "id": "trEX_TRC_MAP_VW$0_row5"
+        },
+        {
+            "name": "Formation",
+            "type": "row",
+            "id": "trEX_TRC_MAP_VW$0_row22"
+        },
+        {
+            "name": "RTT",
+            "type": "row",
+            "id": "trEX_TRC_MAP_VW$0_row25"
+        },
+        {
+            "name": "RTT_E",
+            "type": "row",
+            "id": "trEX_TRC_MAP_VW$0_row26"
+        }
+    ],
+    "extraInputOptions": [
+        {
+            "value": "NONE",
+            "label": ""
+        },
+        {
+            "value": "trEX_TRC_MAP_VW$0_row19",
+            "label": "Avant-vente"
+        },
+        {
+            "value": "trEX_TRC_MAP_VW$0_row20",
+            "label": "Général et administration"
+        },
+        {
+            "value": "trEX_TRC_MAP_VW$0_row45",
+            "label": "IRP Délégation"
+        },
+        {
+            "value": "trEX_TRC_MAP_VW$0_row46",
+            "label": "IRP Réunion"
+        }
+    ],
+    "additionalInformationLink": "UC_EX_WRK_UC_TI_FRA_LINK",
+    "tables": [
+        {
+            "name": "PROJECT_INPUT_TABLE",
+            "description": "Détails heures projet",
+            "id": "EX_TIME_DTL$scrolli$0",
+            "required": true
+        },
+        {
+            "name": "ABSENCE_INPUT_TABLE",
+            "description": "Détails absences et heures internes",
+            "id": "EX_TRC_MAP_VW$scroll$0",
+            "required": true
+        },
+        {
+            "description": "Informations additionnelles",
+            "id": "UC_EX_WRK_UC_TI_FRA_LINK"
+        }
+    ],
+    "contractualHours": [
+        {
+            "value": 35,
+            "psaTimesheet": 7,
+            "description": "35h"
+        },
+        {
+            "value": 37,
+            "psaTimesheet": 7.4,
+            "description": "37h dont 2h structurelles"
+        },
+        {
+            "value": 37.5,
+            "psaTimesheet": 7.5,
+            "description": "37,5h dont 2,5h structurelles"
+        },
+        {
+            "value": 39,
+            "psaTimesheet": 7.8,
+            "description": "39h dont 4h structurelles"
+        },
+        {
+            "value": null,
+            "psaTimesheet": 8,
+            "description": "Forfait jours"
+        }
+    ],
+    "transportOptions": [
+        {
+            "value": "O",
+            "label": "CGI"
+        },
+        {
+            "value": "NA",
+            "label": "N/A"
+        },
+        {
+            "value": "T",
+            "label": "Regulier TT"
+        },
+        {
+            "value": "C",
+            "label": "Site client"
+        },
+        {
+            "value": "VCGI",
+            "label": "Vélo site CGI"
+        },
+        {
+            "value": "VCLI",
+            "label": "Vélo site client"
+        }
+    ],
+    "restTimeOptions": [
+        {
+            "value": 0,
+            "label": "0h"
+        },
+        {
+            "value": 1,
+            "label": "1h"
+        },
+        {
+            "value": 1.3,
+            "label": "1,3h"
+        },
+        {
+            "value": 2,
+            "label": "2h"
+        }
+    ],
+    "activityOptions": [
+        {
+            "value": "PROJET",
+            "label": "PROJET"
+        },
+        {
+            "value": "R_AND_D",
+            "label": "R_AND_D"
+        }
+    ]
+}
