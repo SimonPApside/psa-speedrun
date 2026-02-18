@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "PSA Time Filler",
+  "version": "1.0",
+  "description": "Remplit automatiquement les feuilles de temps PSA",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://psa-fs.ent.cgi.com/psc/fsprda/EMPLOYEE/ERP/c/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://psa-fs.ent.cgi.com/psc/fsprda/EMPLOYEE/ERP/c/*"
+      ],
+      "js": [
+        "content.js"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "resources/config.json",
+        "resources/default_config.json",
+        "resources/empty_config.json",
+        "resources/triggerForm.js"
+      ],
+      "matches": [
+        "https://psa-fs.ent.cgi.com/*"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSA Time Filler</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --secondary: #64748b;
+            --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            --header-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --white: #ffffff;
+            --success-bg: #dcfce7;
+            --success-text: #166534;
+            --error-bg: #fee2e2;
+            --error-text: #991b1b;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-gradient);
+            min-width: 400px;
+            color: var(--text-main);
+            padding: 12px;
+            overflow-y: scroll;
+            /* Prevent scrollbar jitter on status show/hide */
+        }
+
+        .container {
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        /* Compact Header / Control Bar */
+        .controls-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .profile-select-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-main);
+            background: var(--white);
+            cursor: pointer;
+            appearance: none;
+            transition: all 0.2s;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .profile-select-wrapper::after {
+            content: "▾";
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: var(--secondary);
+        }
+
+        .btn-fill {
+            background: var(--header-gradient);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+        }
+
+        .btn-fill:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-fill:active {
+            transform: translateY(0);
+        }
+
+        .toggle-config-btn {
+            background: #f1f5f9;
+            border: 1px solid var(--border);
+            color: var(--secondary);
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .toggle-config-btn:hover {
+            background: #e2e8f0;
+            color: var(--text-main);
+        }
+
+        .toggle-config-btn svg {
+            width: 20px;
+            height: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-config-btn.open svg {
+            transform: rotate(180deg);
+        }
+
+        /* Config Section (Accordion) */
+        .config-accordion {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background: #fafafa;
+        }
+
+        .config-accordion.open {
+            max-height: 1000px;
+            /* Large enough to fit content */
+            transition: max-height 0.5s ease-in;
+            border-top: 1px solid var(--border);
+        }
+
+        .config-content {
+            padding: 16px;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--secondary);
+            margin: 16px 0 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .section-title:first-child {
+            margin-top: 0;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        input[type="number"],
+        input[type="text"] {
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* Weekly Grid */
+        .weekday-grid {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .weekday-row {
+            display: grid;
+            grid-template-columns: 80px 1fr 1fr;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .weekday-row:last-child {
+            border-bottom: none;
+        }
+
+        .weekday-row.header {
+            background: #f8fafc;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--secondary);
+            padding: 4px 0;
+        }
+
+        .day-label {
+            padding-left: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .weekday-row select {
+            border: none;
+            border-radius: 0;
+            padding: 7px 6px;
+            font-size: 0.78rem;
+            background: transparent;
+            color: var(--text-main);
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .weekday-row select:hover {
+            background: #f1f5f9;
+        }
+
+        .weekday-row select:focus {
+            outline: none;
+            background: #eff6ff;
+            color: var(--primary);
+        }
+
+        .weekday-row select:first-of-type {
+            border-left: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+        }
+
+        /* Status Messages */
+        .status-bar {
+            padding: 8px 12px;
+            font-size: 0.75rem;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-bar.show {
+            display: flex;
+        }
+
+        .status-bar.success {
+            background: var(--success-bg);
+            color: var(--success-text);
+        }
+
+        .status-bar.info {
+            background: #e0f2fe;
+            color: #075985;
+        }
+
+        .status-bar.warning {
+            background: #fffbeb;
+            color: #92400e;
+        }
+
+        /* Actions Footer */
+        .config-footer {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .config-footer.hidden {
+            display: none;
+        }
+
+        .btn-action {
+            flex: 1;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid var(--border);
+        }
+
+        .btn-save {
+            background: var(--primary);
+            color: white;
+            border: none;
+        }
+
+        .btn-save:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-reset {
+            background: white;
+            color: var(--error-text);
+        }
+
+        .btn-reset:hover {
+            background: var(--error-bg);
+        }
+
+        .input-hint {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Dynamic Status (Top) -->
+        <div id="instructions" class="status-bar show info">Chargement...</div>
+
+        <!-- Compact Control Bar -->
+        <div class="controls-bar">
+            <div class="profile-select-wrapper">
+                <select id="activeProfileSelect" title="Choisir un profil">
+                    <option value="profile1">👤 Profil 1</option>
+                    <option value="profile2">👤 Profil 2</option>
+                    <option value="custom">📝 Personnalisé</option>
+                </select>
+            </div>
+
+            <button id="fillFormButton" class="btn-fill" title="Remplir le formulaire PSA">Remplir</button>
+
+            <button id="toggleConfigBtn" class="toggle-config-btn" title="Paramètres">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Configuration Accordion -->
+        <div id="configAccordion" class="config-accordion">
+            <div class="config-content">
+                <form id="configForm">
+                    <div class="section-title">Paramètres Généraux</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="workHours">Heures / jour</label>
+                            <input type="number" id="workHours" name="workHours" min="1" max="24" step="0.1"
+                                placeholder="8" list="contractualHoursList" required>
+                            <datalist id="contractualHoursList"></datalist>
+                        </div>
+                        <div class="form-group">
+                            <label for="restTime">Pause Déj</label>
+                            <select id="restTime" name="restTime" required></select>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="defaultProject">Code Projet</label>
+                            <input type="text" id="defaultProject" name="defaultProject" placeholder="PROJ-001">
+                        </div>
+                        <div class="form-group">
+                            <label for="defaultActivity">Activité</label>
+                            <select id="defaultActivity" name="defaultActivity" required></select>
+                        </div>
+                    </div>
+
+                    <div class="section-title">Planning Hebdomadaire</div>
+                    <div class="weekday-grid">
+                        <div class="weekday-row header">
+                            <div class="day-label">Jour</div>
+                            <div>Transport</div>
+                            <div>Spécifique</div>
+                        </div>
+
+                        <!-- Monday -->
+                        <div class="weekday-row">
+                            <div class="day-label">Lundi</div>
+                            <select id="monday" name="monday" required title="Transport"></select>
+                            <select id="mondayExtra" name="mondayExtra" title="Extra"></select>
+                        </div>
+
+                        <!-- Tuesday -->
+                        <div class="weekday-row">
+                            <div class="day-label">Mardi</div>
+                            <select id="tuesday" name="tuesday" required></select>
+                            <select id="tuesdayExtra" name="tuesdayExtra"></select>
+                        </div>
+
+                        <!-- Wednesday -->
+                        <div class="weekday-row">
+                            <div class="day-label">Mercredi</div>
+                            <select id="wednesday" name="wednesday" required></select>
+                            <select id="wednesdayExtra" name="wednesdayExtra"></select>
+                        </div>
+
+                        <!-- Thursday -->
+                        <div class="weekday-row">
+                            <div class="day-label">Jeudi</div>
+                            <select id="thursday" name="thursday" required></select>
+                            <select id="thursdayExtra" name="thursdayExtra"></select>
+                        </div>
+
+                        <!-- Friday -->
+                        <div class="weekday-row">
+                            <div class="day-label">Vendredi</div>
+                            <select id="friday" name="friday" required></select>
+                            <select id="fridayExtra" name="fridayExtra"></select>
+                        </div>
+                    </div>
+
+                    <div class="config-footer">
+                        <button type="submit" class="btn-action btn-save">💾 Enregistrer</button>
+                        <button type="button" id="resetBtn" class="btn-action btn-reset">🔄 Réinitialiser</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+
+</html>
