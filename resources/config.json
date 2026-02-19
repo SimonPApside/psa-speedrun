@@ -12,7 +12,11 @@
             "value": "trEX_TRC_MAP_VW$0_row20",
             "label": "Général et administration"
         },
-                {
+        {
+            "value": "trEX_TRC_MAP_VW$0_row18",
+            "label": "Travaux passagers (Intercontrat)"
+        },
+        {
             "value": "trEX_TRC_MAP_VW$0_row22",
             "label": "Formation"
         },
