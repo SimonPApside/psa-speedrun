@@ -51,7 +51,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
     fillInputs();
     injectCode(chrome.runtime.getURL('resources/triggerForm.js'));
-    fillInputsRest();
+    fillInputsRest(() => sendResponse({ success: true }));
   }
 
   return true;
@@ -124,7 +124,7 @@ async function fillInputs() {
 // FILL — Rest time and transport codes
 // ============================================================
 
-function fillInputsRest() {
+function fillInputsRest(onDone) {
   const intervalId = setInterval(async () => {
     if (!document.getElementById('PT_AGSTARTPAGE_NUI')) return;
 
@@ -161,7 +161,12 @@ function fillInputsRest() {
       }
     }
 
+    // injectCode(chrome.runtime.getURL('resources/closeForm.js'));
+    const link = doc.querySelector('input[name="#ICSave"]');
+    link.click();
+
     clearInterval(intervalId);
+    if (onDone) onDone();
   }, 1000);
 }
 

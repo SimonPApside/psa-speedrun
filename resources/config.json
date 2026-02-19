@@ -1,26 +1,4 @@
 {
-    "inputs": [
-        {
-            "name": "Maladie",
-            "type": "row",
-            "id": "trEX_TRC_MAP_VW$0_row5"
-        },
-        {
-            "name": "Formation",
-            "type": "row",
-            "id": "trEX_TRC_MAP_VW$0_row22"
-        },
-        {
-            "name": "RTT",
-            "type": "row",
-            "id": "trEX_TRC_MAP_VW$0_row25"
-        },
-        {
-            "name": "RTT_E",
-            "type": "row",
-            "id": "trEX_TRC_MAP_VW$0_row26"
-        }
-    ],
     "extraInputOptions": [
         {
             "value": "NONE",
@@ -33,6 +11,22 @@
         {
             "value": "trEX_TRC_MAP_VW$0_row20",
             "label": "Général et administration"
+        },
+                {
+            "value": "trEX_TRC_MAP_VW$0_row22",
+            "label": "Formation"
+        },
+        {
+            "value": "trEX_TRC_MAP_VW$0_row5",
+            "label": "Maladie"
+        },
+        {
+            "value": "trEX_TRC_MAP_VW$0_row25",
+            "label": "RTT"
+        },
+        {
+            "value": "trEX_TRC_MAP_VW$0_row26",
+            "label": "RTT Employeur"
         },
         {
             "value": "trEX_TRC_MAP_VW$0_row45",
@@ -126,7 +120,7 @@
         },
         {
             "value": 1.3,
-            "label": "1,3h"
+            "label": "1h30"
         },
         {
             "value": 2,

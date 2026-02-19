@@ -124,6 +124,10 @@ function resetConfig() {
 // ============================================================
 
 async function fillForm() {
+        // Fold the config accordion back
+    document.getElementById('configAccordion').classList.remove('open');
+    document.getElementById('toggleConfigBtn').classList.remove('open');
+
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const profileId = document.getElementById('activeProfileSelect').value;
 
@@ -132,9 +136,11 @@ async function fillForm() {
         const config = getFormConfig();
         await chrome.storage.sync.set({ currentConfig: config });
 
-        chrome.tabs.sendMessage(tab.id, { type: 'FILL_FORM' }, () => {
-            // Clean up: remove the temporary custom config from storage
-            chrome.storage.sync.remove('currentConfig');
+        chrome.tabs.sendMessage(tab.id, { type: 'FILL_FORM' }, (response) => {
+            // Clean up only after content.js confirms fillInputsRest is done
+            if (response && response.success) {
+                chrome.storage.sync.remove('currentConfig');
+            }
         });
     } else {
         chrome.tabs.sendMessage(tab.id, { type: 'FILL_FORM' });
