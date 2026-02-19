@@ -7,7 +7,6 @@ const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 
 // Loaded from JSON at startup
 let DEFAULT_CONFIG = null;
-let EMPTY_CONFIG = null;
 
 // ============================================================
 // INIT
@@ -15,14 +14,12 @@ let EMPTY_CONFIG = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Load JSON config files (options + default/empty configs)
-    const [configData, defaultConfig, emptyConfig] = await Promise.all([
+    const [configData, defaultConfig] = await Promise.all([
         loadJson('resources/config.json'),
-        loadJson('resources/default_config.json'),
-        loadJson('resources/empty_config.json')
+        loadJson('resources/default_config.json')
     ]);
 
     DEFAULT_CONFIG = defaultConfig;
-    EMPTY_CONFIG = emptyConfig;
 
     if (configData) populateSelectOptions(configData);
 
@@ -80,14 +77,16 @@ function setProfile(profileId, storageItems) {
     updateFooterVisibility(profileId);
 
     if (profileId === 'custom') {
-        loadConfigIntoForm(DEFAULT_CONFIG);
+        loadConfigIntoForm({ ...DEFAULT_CONFIG, profileName: 'Personnalisé' });
+        document.getElementById('profileName').parentElement.style.display = 'none';
         openAccordion();
         return;
     }
 
+    document.getElementById('profileName').parentElement.style.display = 'flex';
     const config = profileId === 'profile1'
-        ? (storageItems.savedProfiles.profile1 || DEFAULT_CONFIG)
-        : (storageItems.savedProfiles.profile2 || DEFAULT_CONFIG);
+        ? (storageItems.savedProfiles.profile1 || { ...DEFAULT_CONFIG, profileName: 'Profil 1' })
+        : (storageItems.savedProfiles.profile2 || { ...DEFAULT_CONFIG, profileName: 'Profil 2' });
 
     chrome.storage.sync.set({ currentConfig: config, activeProfileId: profileId });
     loadConfigIntoForm(config);
@@ -124,7 +123,7 @@ function resetConfig() {
 // ============================================================
 
 async function fillForm() {
-        // Fold the config accordion back
+    // Fold the config accordion back
     document.getElementById('configAccordion').classList.remove('open');
     document.getElementById('toggleConfigBtn').classList.remove('open');
 
@@ -230,10 +229,16 @@ function updateProfileSelectVisuals(savedProfiles) {
     if (!select) return;
 
     const p1 = select.querySelector('option[value="profile1"]');
-    if (p1) p1.textContent = savedProfiles.profile1 ? '👤 Profil 1 (Enregistré)' : '👤 Profil 1 (Vide)';
+    if (p1) {
+        const name = savedProfiles.profile1?.profileName || 'Profil 1';
+        p1.textContent = `👤 ${name}${savedProfiles.profile1 ? '' : ' (Vide)'}`;
+    }
 
     const p2 = select.querySelector('option[value="profile2"]');
-    if (p2) p2.textContent = savedProfiles.profile2 ? '👤 Profil 2 (Enregistré)' : '👤 Profil 2 (Vide)';
+    if (p2) {
+        const name = savedProfiles.profile2?.profileName || 'Profil 2';
+        p2.textContent = `👤 ${name}${savedProfiles.profile2 ? '' : ' (Vide)'}`;
+    }
 }
 
 // ============================================================
@@ -250,7 +255,8 @@ function loadConfigIntoForm(config) {
 
 function getFormConfig() {
     const config = {};
-    Object.keys(DEFAULT_CONFIG).forEach(key => {
+    const fields = [...Object.keys(DEFAULT_CONFIG), 'profileName'];
+    fields.forEach(key => {
         const el = document.getElementById(key);
         if (el) config[key] = el.type === 'number' ? parseFloat(el.value) : el.value;
     });

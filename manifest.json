@@ -13,7 +13,9 @@
   ],
   "background": {
     "service_worker": "background.js",
-    "type": "module"
+    "scripts": [
+      "background.js"
+    ]
   },
   "action": {
     "default_popup": "popup.html"
@@ -33,12 +35,17 @@
       "resources": [
         "resources/config.json",
         "resources/default_config.json",
-        "resources/empty_config.json",
         "resources/triggerForm.js"
       ],
       "matches": [
         "https://psa-fs.ent.cgi.com/*"
       ]
     }
-  ]
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "psa-speedrun@apside.fr",
+      "strict_min_version": "109.0"
+    }
+  }
 }

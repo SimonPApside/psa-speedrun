@@ -1,67 +1,44 @@
 # Configuration Interface
 
-This extension now includes a unified popup interface that seamlessly combines the main view and configuration view in a single-page application.
+This extension provides a unified interface to fill PSA timesheets efficiently.
+
+## Installation & Activation (Chrome) [FR]
+
+Pour activer cette extension dans Google Chrome, suivez les étapes suivantes :
+
+1. **Télécharger le code** : Récupérez les fichiers du projet (par exemple via "Download ZIP").
+   ![Téléchargement](docs/download_extension.jpg)
+2. **Ouvrir les Extensions** : Dans Chrome, allez dans le menu, puis **Extensions** > **Gérer les extensions**, ou tapez `chrome://extensions/` dans la barre d'adresse.
+3. **Activer le Mode Développeur** : En haut à droite, activez l'interrupteur **Mode développeur**.
+4. **Charger l'extension** : Cliquez sur **Charger l'extension non empaquetée** et sélectionnez le dossier du projet décompressé.
+   ![Chargement](docs/load_extension.jpg)
 
 ## Features
 
-The popup (`popup_unified.html`) provides:
+Le popup (`popup.html`) permet de :
 
 ### Main View
-- Status indicator for the extension
-- Hours selection dropdown
-- "Remplir le formulaire" button
-- Quick access to configuration
+- Indicateur de statut de l'extension
+- Bouton "Remplir" pour automatiser la saisie
+- Sélection de profil (Profil 1, Profil 2, Personnalisé)
 
 ### Configuration View
-1. **Number of Hours** - Daily work hours (0.5 - 24 hours)
-2. **Rest Time** - Break duration in minutes (0 - 120 minutes)
-3. **Default Code Project** - Default project code for time tracking
-4. **Weekly Transport Mode** - Choose transport mode for each weekday:
-   - Monday through Friday
-   - Options: In Place, Bicycle, Client
-
-## Navigation
-
-**Seamless View Switching:**
-- Click "⚙️ Configuration" to switch to config view (instant, no popup close)
-- Click "← Back to Main" to return to main view (instant, no popup close)
-- Click "💾 Save" to save settings and automatically return to main view
-
-## Accessing Configuration
-
-### From Code
-Use the `configUtils.js` utility module to access configuration:
-
-```javascript
-// Get full configuration
-const config = await getConfig();
-
-// Get specific value
-const workHours = await getConfigValue('workHours');
-
-// Get transport mode for a specific day
-const mondayMode = await getTransportMode('monday');
-
-// Get today's transport mode
-const todayMode = await getTodayTransportMode();
-
-// Update configuration
-await updateConfig({ workHours: 7.5 });
-
-// Reset to defaults
-await resetConfig();
-```
+1. **Nom du profil** - Personnalisez le nom de vos profils.
+2. **Heures par jour** - Heures contractuelles (ex: 8h).
+3. **Pause Déjeuner** - Durée de la pause.
+4. **Code Projet & Activité** - Valeurs par défaut pour la saisie.
+5. **Planning Hebdomadaire** - Mode de transport et options spécifiques par jour.
 
 ## Storage
 
-Configuration is stored using Chrome's `chrome.storage.sync` API, which:
-- Syncs across devices when user is signed in to Chrome
-- Persists even when extension is updated
-- Has a limit of 100KB total storage
+La configuration est stockée via `chrome.storage.sync`, ce qui permet :
+- Synchronisation entre vos navigateurs Chrome (si connecté)
+- Persistance lors des mises à jour de l'extension
 
 ## Files
 
-- `popup_unified.html` - Unified popup interface with both views
-- `popup_unified.js` - Combined logic for main and config views
-- `configUtils.js` - Utility functions for accessing configuration
-- `manifest.json` - Updated to use unified popup
+- `popup.html` - Interface principale
+- `popup.js` - Logique de l'interface et gestion des profils
+- `content.js` - Script injecté dans la page PSA pour remplir les champs
+- `manifest.json` - Configuration de l'extension
+
