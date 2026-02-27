@@ -13,9 +13,7 @@
   ],
   "background": {
     "service_worker": "background.js",
-    "scripts": [
-      "background.js"
-    ]
+    "type": "module"
   },
   "action": {
     "default_popup": "popup.html"
@@ -41,11 +39,5 @@
         "https://psa-fs.ent.cgi.com/*"
       ]
     }
-  ],
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "psa-speedrun@apside.fr",
-      "strict_min_version": "109.0"
-    }
-  }
+  ]
 }
