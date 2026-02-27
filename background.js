@@ -1,4 +1,4 @@
-import { joursFeries, getWeekJoursFeries } from './lib/joursFeries.js';
+importScripts('./lib/joursFeries.js');
 
 const TARGET_URL = 'https://psa-fs.ent.cgi.com/psc/fsprda/EMPLOYEE/ERP/c/';
 
