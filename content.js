@@ -131,33 +131,50 @@ function fillInputsRest(onDone) {
     const { currentConfig: settings } = await chrome.storage.sync.get({
       currentConfig: {
         restTime: 1,
-        monday: 'NA', tuesday: 'NA', wednesday: 'NA', thursday: 'NA', friday: 'NA'
+        monday: 'NA', tuesday: 'NA', wednesday: 'NA', thursday: 'NA', friday: 'NA',
+        mondayExtra: 'NONE', tuesdayExtra: 'NONE', wednesdayExtra: 'NONE',
+        thursdayExtra: 'NONE', fridayExtra: 'NONE'
       }
     });
 
     const iframe = document.getElementsByTagName('iframe')[0];
     const doc = iframe.contentWindow.document;
 
+    // Build a per-day skip mask: true if the day uses an absence type that
+    // should not populate rest time or location (e.g. RTT, Maladie).
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+    const skipDay = days.map(day => {
+      const extraId = settings[day + 'Extra'];
+      if (!extraId || extraId === 'NONE') return false;
+      const option = config.extraInputOptions.find(o => o.value === extraId);
+      return option?.skipRestAndLocation === true;
+    });
+
     // --- Daily rest checkboxes (3 groups of 7 days) ---
     const restCheckboxes = Array.from(doc.querySelectorAll('[name^="UC_DAILYREST"]'));
     for (let i = 0; i < 3; i++) {
       const group = restCheckboxes.slice(i * 7, i * 7 + 7);
-      group.forEach((el, y) => setAndDispatch(el, y === 0 || y === 6 ? 'NA' : 'Y'));
+      group.forEach((el, y) => setAndDispatch(el, y === 0 || y === 6 || skipDay[y - 1] ? 'NA' : 'Y'));
     }
 
     // --- Rest time values (Mon–Fri = indices 1–5, weekends = 0) ---
+    // Skip days flagged as absence types (leave them at '0').
     const restValue = settings.restTime.toString().replace('.', ',');
     const restInputs = Array.from(doc.querySelectorAll('[name^="UC_TIME_LIN_WRK_UC_DAILYREST"]'));
-    restInputs.forEach((el, y) => setAndDispatch(el, y > 0 && y < 6 ? restValue : '0'));
+    restInputs.forEach((el, y) => {
+      const isWeekday = y > 0 && y < 6;
+      const value = isWeekday && !skipDay[y - 1] ? restValue : '0';
+      setAndDispatch(el, value);
+    });
 
     // --- Transport / location codes (Mon–Fri = indices 1–5 in each 7-day group) ---
-    const dailyCodes = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
-      .map(day => settings[day]);
+    // Skip days flagged as absence types (leave them at 'NA').
+    const dailyCodes = days.map(day => settings[day]);
     const locationInputs = Array.from(doc.querySelectorAll('[name^="UC_LOCATION_A"]'));
     for (let i = 0; i < 2; i++) {
       const group = locationInputs.slice(i * 7, i * 7 + 7);
       for (let y = 1; y <= 5; y++) {
-        if (group[y]) setAndDispatch(group[y], dailyCodes[y - 1]);
+        if (group[y]) setAndDispatch(group[y], skipDay[y - 1] ? 'NA' : dailyCodes[y - 1]);
       }
     }
 

@@ -22,15 +22,18 @@
         },
         {
             "value": "trEX_TRC_MAP_VW$0_row5",
-            "label": "Maladie"
+            "label": "Maladie",
+            "skipRestAndLocation": true
         },
         {
             "value": "trEX_TRC_MAP_VW$0_row25",
-            "label": "RTT"
+            "label": "RTT",
+            "skipRestAndLocation": true
         },
         {
             "value": "trEX_TRC_MAP_VW$0_row26",
-            "label": "RTT Employeur"
+            "label": "RTT Employeur",
+            "skipRestAndLocation": true
         },
         {
             "value": "trEX_TRC_MAP_VW$0_row45",
