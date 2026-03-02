@@ -13,6 +13,11 @@
             "label": "Général et administration"
         },
         {
+            "value": "trEX_TRC_MAP_VW$0_row21",
+            "label": "Compl temps partiel / activite",
+            "skipRestAndLocation": true
+        },
+        {
             "value": "trEX_TRC_MAP_VW$0_row18",
             "label": "Travaux passagers (Intercontrat)"
         },
