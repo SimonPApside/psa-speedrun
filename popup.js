@@ -52,7 +52,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('resetBtn').addEventListener('click', resetConfig);
     document.getElementById('fillFormButton').addEventListener('click', fillForm);
 
-    // 7. Check PSA page status
+    // 7. Strikethrough listeners for Extra selects
+    DAYS.forEach(day => {
+        document.getElementById(`${day}Extra`).addEventListener('change', (e) => {
+            updateStrikethrough(day, e.target.value);
+        });
+    });
+
+    // 8. Check PSA page status
     await checkExtensionStatus();
 });
 
@@ -103,6 +110,8 @@ function saveCurrentConfig() {
         chrome.storage.sync.set({ currentConfig: config, activeProfileId: profileId, savedProfiles }, () => {
             updateProfileSelectVisuals(savedProfiles);
             flashInstruction('✓ Configuration enregistrée !', 'success');
+            // Collapse accordion after save
+            setTimeout(closeAccordion, 1000);
         });
     });
 }
@@ -210,13 +219,25 @@ function flashInstruction(msg, type) {
 // ============================================================
 
 function toggleAccordion() {
-    document.getElementById('configAccordion').classList.toggle('open');
-    document.getElementById('toggleConfigBtn').classList.toggle('open');
+    const accordion = document.getElementById('configAccordion');
+    const btn = document.getElementById('toggleConfigBtn');
+    const isOpening = !accordion.classList.contains('open');
+
+    accordion.classList.toggle('open');
+    btn.classList.toggle('open');
+    document.body.classList.toggle('expanded', isOpening);
 }
 
 function openAccordion() {
     document.getElementById('configAccordion').classList.add('open');
     document.getElementById('toggleConfigBtn').classList.add('open');
+    document.body.classList.add('expanded');
+}
+
+function closeAccordion() {
+    document.getElementById('configAccordion').classList.remove('open');
+    document.getElementById('toggleConfigBtn').classList.remove('open');
+    document.body.classList.remove('expanded');
 }
 
 function updateFooterVisibility(profileId) {
@@ -251,6 +272,19 @@ function loadConfigIntoForm(config) {
         const el = document.getElementById(key);
         if (el) el.value = value;
     });
+
+    // Apply strikethrough on load
+    DAYS.forEach(day => {
+        const extraVal = config[`${day}Extra`];
+        updateStrikethrough(day, extraVal);
+    });
+}
+
+function updateStrikethrough(day, extraValue) {
+    const projectInput = document.getElementById(`${day}Project`);
+    if (projectInput) {
+        projectInput.classList.toggle('strikethrough', extraValue && extraValue !== 'NONE');
+    }
 }
 
 function getFormConfig() {
@@ -266,7 +300,6 @@ function getFormConfig() {
 function populateSelectOptions(config) {
     if (config.contractualHours) populateDatalist('contractualHoursList', config.contractualHours);
     if (config.restTimeOptions) populateSelect('restTime', config.restTimeOptions);
-    if (config.activityOptions) populateSelect('defaultActivity', config.activityOptions);
 
     if (config.transportOptions) {
         DAYS.forEach(day => populateSelect(day, config.transportOptions));

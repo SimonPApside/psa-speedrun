@@ -33,7 +33,7 @@
       "resources": [
         "resources/config.json",
         "resources/default_config.json",
-        "resources/triggerForm.js"
+        "resources/triggerClickFunction.js"
       ],
       "matches": [
         "https://psa-fs.ent.cgi.com/*"

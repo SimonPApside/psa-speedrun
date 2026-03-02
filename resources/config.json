@@ -26,6 +26,11 @@
             "skipRestAndLocation": true
         },
         {
+            "value": "trEX_TRC_MAP_VW$0_row3",
+            "label": "Vacances (Congés payés)",
+            "skipRestAndLocation": true
+        },
+        {
             "value": "trEX_TRC_MAP_VW$0_row25",
             "label": "RTT",
             "skipRestAndLocation": true
@@ -44,7 +49,6 @@
             "label": "IRP Réunion"
         }
     ],
-    "additionalInformationLink": "UC_EX_WRK_UC_TI_FRA_LINK",
     "tables": [
         {
             "name": "PROJECT_INPUT_TABLE",
@@ -132,16 +136,6 @@
         {
             "value": 2,
             "label": "2h"
-        }
-    ],
-    "activityOptions": [
-        {
-            "value": "PROJET",
-            "label": "PROJET"
-        },
-        {
-            "value": "R_AND_D",
-            "label": "R_AND_D"
         }
     ]
 }

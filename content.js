@@ -49,9 +49,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse({ success: false });
       return true;
     }
-    fillInputs();
-    injectCode(chrome.runtime.getURL('resources/triggerForm.js'));
-    fillInputsRest(() => sendResponse({ success: true }));
+    // Handle async fillInputs
+    (async () => {
+      await fillInputs();
+      injectCode(chrome.runtime.getURL('resources/triggerClickFunction.js'), { targetId: "UC_EX_WRK_UC_TI_FRA_LINK" });
+      fillInputsRest(() => sendResponse({ success: true }));
+    })();
   }
 
   return true;
@@ -65,13 +68,11 @@ async function fillInputs() {
   const { currentConfig: settings } = await chrome.storage.sync.get({
     currentConfig: {
       workHours: 8,
-      defaultProject: '',
-      defaultActivity: '',
-      monday: 'NA', mondayExtra: 'NONE',
-      tuesday: 'NA', tuesdayExtra: 'NONE',
-      wednesday: 'NA', wednesdayExtra: 'NONE',
-      thursday: 'NA', thursdayExtra: 'NONE',
-      friday: 'NA', fridayExtra: 'NONE'
+      monday: 'NA', mondayExtra: 'NONE', mondayProject: '',
+      tuesday: 'NA', tuesdayExtra: 'NONE', tuesdayProject: '',
+      wednesday: 'NA', wednesdayExtra: 'NONE', wednesdayProject: '',
+      thursday: 'NA', thursdayExtra: 'NONE', thursdayProject: '',
+      friday: 'NA', fridayExtra: 'NONE', fridayProject: ''
     }
   });
 
@@ -89,36 +90,77 @@ async function fillInputs() {
 
   const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 
-  // Fill project code + activity if at least one day uses the standard project row
-  const hasProjectRow = days.some(day => settings[day + 'Extra'] === 'NONE');
-  if (hasProjectRow && settings.defaultProject) {
-    const projectInput = doc.querySelector('[name^="PROJECT_CODE"]');
-    if (projectInput) {
-      setAndDispatch(projectInput, settings.defaultProject);
-      const activityInput = doc.querySelector('input[name^="ACTIVITY_CODE"]');
-      if (activityInput) setAndDispatch(activityInput, settings.defaultActivity);
-    }
-  }
-
-  // Fill hours for each weekday
-  const timeInputs = doc.querySelectorAll('[id^="trEX_TIME_DTL"] input[name^="TIME"]');
-
   for (let i = 0; i < 5; i++) {
     const dayKey = days[i];
     const extraRowId = settings[dayKey + 'Extra'];
+    const projectCode = settings[dayKey + 'Project'];
 
+    // 1- Extra priority
     if (extraRowId && extraRowId !== 'NONE') {
-      // Extra activity row (e.g. Avant-vente, RTT) — PSA index: Monday = 2
       const row = doc.getElementById(extraRowId);
       const input = row?.querySelector(`input[name^="POL_TIME${i + 2}$"]`);
       if (input) setAndDispatch(input, hoursValue);
-    } else {
-      // Standard project row — inputs[0] is Sunday, so Monday starts at index 1
-      const input = timeInputs[i + 1];
-      if (input) setAndDispatch(input, hoursValue);
+      continue;
+    }
+
+    // 2- Project logic (if no extra)
+    if (projectCode) {
+      const targetRow = await getOrCreateProjectRow(doc, projectCode);
+      if (targetRow) {
+        const ti = targetRow.querySelectorAll('input[name^="TIME"]')[i + 1];
+        if (ti) setAndDispatch(ti, hoursValue);
+      }
     }
   }
 }
+
+/**
+ * Finds a row with the matching projectCode, or an empty one, 
+ * or creates a new one by clicking the "New" button.
+ */
+async function getOrCreateProjectRow(doc, projectCode) {
+  const projectRows = Array.from(doc.querySelectorAll('[id^="trEX_TIME_DTL"]'));
+
+  // 1. Find matching projectCode
+  let row = projectRows.find(r => r.querySelector('input[name^="PROJECT_CODE"]')?.value.trim() === projectCode.trim());
+  if (row) return row;
+
+  // 2. Find empty row
+  row = projectRows.find(r => r.querySelector('input[name^="PROJECT_CODE"]')?.value.trim() === '');
+  if (row) {
+    const ci = row.querySelector('input[name^="PROJECT_CODE"]');
+    const ai = row.querySelector('input[name^="ACTIVITY_CODE"]');
+    if (ci) setAndDispatch(ci, projectCode);
+    if (ai) setAndDispatch(ai, 'PROJET');
+    return row;
+  }
+
+  // 3. Click "New Row"
+  const newRowLink = doc.querySelector('a[name^="EX_TIME_DTL$new"]');
+  if (newRowLink) {
+    injectCode(chrome.runtime.getURL('resources/triggerClickFunction.js'), {
+      targetId: newRowLink.id,
+      targetName: newRowLink.getAttribute('name')
+    });
+    return new Promise(resolve => {
+      const check = setInterval(() => {
+        const updatedRows = Array.from(doc.querySelectorAll('[id^="trEX_TIME_DTL"]'));
+        const newRow = updatedRows.find(r => r.querySelector('input[name^="PROJECT_CODE"]')?.value.trim() === '');
+        if (newRow) {
+          clearInterval(check);
+          const ci = newRow.querySelector('input[name^="PROJECT_CODE"]');
+          const ai = newRow.querySelector('input[name^="ACTIVITY_CODE"]');
+          if (ci) setAndDispatch(ci, projectCode);
+          if (ai) setAndDispatch(ai, 'PROJET');
+          resolve(newRow);
+        }
+      }, 200);
+    });
+  }
+
+  return null;
+}
+
 
 // ============================================================
 // FILL — Rest time and transport codes
@@ -197,10 +239,16 @@ function setAndDispatch(el, value) {
   el.dispatchEvent(new Event('change'));
 }
 
-/** Injects an external script into the page context. */
-function injectCode(src) {
+/** 
+ * Injects an external script into the page context.
+ * Use data object to pass variables via dataset (read via document.currentScript.dataset).
+ */
+function injectCode(src, data = {}) {
   const script = document.createElement('script');
   script.src = src;
+  for (const [key, value] of Object.entries(data)) {
+    if (value) script.dataset[key] = value;
+  }
   script.onload = function () { this.remove(); };
   (document.head || document.documentElement).appendChild(script);
 }

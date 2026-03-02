@@ -35,17 +35,22 @@
             background: var(--bg-gradient);
             min-width: 400px;
             color: var(--text-main);
-            padding: 12px;
+            padding: 0;
             overflow-y: scroll;
+            transition: min-width 0.3s ease;
             /* Prevent scrollbar jitter on status show/hide */
+        }
+
+        body.expanded {
+            min-width: 600px;
         }
 
         .container {
             background: var(--white);
-            border-radius: 12px;
-            box-shadow: var(--shadow-lg);
+            border-radius: 0;
+            box-shadow: none;
             overflow: hidden;
-            border: 1px solid var(--border);
+            border: none;
         }
 
         /* Compact Header / Control Bar */
@@ -188,16 +193,21 @@
         }
 
         .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+            display: flex;
             gap: 12px;
             margin-bottom: 12px;
+        }
+
+        .form-grid>.form-group {
+            flex: 1;
         }
 
         .form-group {
             display: flex;
             flex-direction: column;
             gap: 4px;
+            min-width: 0;
+            /* Prevent flex blowouts */
         }
 
         label {
@@ -230,7 +240,7 @@
 
         .weekday-row {
             display: grid;
-            grid-template-columns: 80px 1fr 1fr;
+            grid-template-columns: 80px 1fr 1fr 1fr;
             align-items: center;
             border-bottom: 1px solid var(--border);
         }
@@ -278,6 +288,33 @@
         .weekday-row select:first-of-type {
             border-left: 1px solid var(--border);
             border-right: 1px solid var(--border);
+        }
+
+        .weekday-row select:nth-of-type(2) {
+            border-left: 1px solid var(--border);
+        }
+
+        .weekday-row input[type="text"] {
+            border: none;
+            border-left: 1px solid var(--border);
+            border-radius: 0;
+            padding: 7px 6px;
+            font-size: 0.78rem;
+            background: transparent;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        .weekday-row input[type="text"].strikethrough {
+            text-decoration: line-through;
+            color: var(--text-muted);
+            opacity: 0.6;
+            background: #f8fafc;
+        }
+
+        .weekday-row input[type="text"]:focus {
+            background: #eff6ff;
+            color: var(--primary);
         }
 
         /* Status Messages */
@@ -387,11 +424,11 @@
             <div class="config-content">
                 <form id="configForm">
                     <div class="section-title">Paramètres Généraux</div>
-                    <div class="form-group" style="margin-bottom: 12px;">
-                        <label for="profileName">Nom du profil</label>
-                        <input type="text" id="profileName" name="profileName" placeholder="Mon Profil">
-                    </div>
                     <div class="form-grid">
+                        <div class="form-group">
+                            <label for="profileName">Nom du profil</label>
+                            <input type="text" id="profileName" name="profileName" placeholder="Mon Profil">
+                        </div>
                         <div class="form-group">
                             <label for="workHours">Heures / jour</label>
                             <input type="number" id="workHours" name="workHours" min="1" max="24" step="0.1"
@@ -404,22 +441,13 @@
                         </div>
                     </div>
 
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="defaultProject">Code Projet</label>
-                            <input type="text" id="defaultProject" name="defaultProject" placeholder="PROJ-001">
-                        </div>
-                        <div class="form-group">
-                            <label for="defaultActivity">Activité</label>
-                            <select id="defaultActivity" name="defaultActivity" required></select>
-                        </div>
-                    </div>
 
                     <div class="section-title">Planning Hebdomadaire</div>
                     <div class="weekday-grid">
                         <div class="weekday-row header">
                             <div class="day-label">Jour</div>
                             <div>Transport</div>
+                            <div>Code Projet</div>
                             <div>Spécifique</div>
                         </div>
 
@@ -427,6 +455,8 @@
                         <div class="weekday-row">
                             <div class="day-label">Lundi</div>
                             <select id="monday" name="monday" required title="Transport"></select>
+                            <input type="text" id="mondayProject" name="mondayProject" placeholder="PROJ-001"
+                                title="Code Projet">
                             <select id="mondayExtra" name="mondayExtra" title="Extra"></select>
                         </div>
 
@@ -434,6 +464,8 @@
                         <div class="weekday-row">
                             <div class="day-label">Mardi</div>
                             <select id="tuesday" name="tuesday" required></select>
+                            <input type="text" id="tuesdayProject" name="tuesdayProject" placeholder="PROJ-001"
+                                title="Code Projet">
                             <select id="tuesdayExtra" name="tuesdayExtra"></select>
                         </div>
 
@@ -441,6 +473,8 @@
                         <div class="weekday-row">
                             <div class="day-label">Mercredi</div>
                             <select id="wednesday" name="wednesday" required></select>
+                            <input type="text" id="wednesdayProject" name="wednesdayProject" placeholder="PROJ-001"
+                                title="Code Projet">
                             <select id="wednesdayExtra" name="wednesdayExtra"></select>
                         </div>
 
@@ -448,6 +482,8 @@
                         <div class="weekday-row">
                             <div class="day-label">Jeudi</div>
                             <select id="thursday" name="thursday" required></select>
+                            <input type="text" id="thursdayProject" name="thursdayProject" placeholder="PROJ-001"
+                                title="Code Projet">
                             <select id="thursdayExtra" name="thursdayExtra"></select>
                         </div>
 
@@ -455,6 +491,8 @@
                         <div class="weekday-row">
                             <div class="day-label">Vendredi</div>
                             <select id="friday" name="friday" required></select>
+                            <input type="text" id="fridayProject" name="fridayProject" placeholder="PROJ-001"
+                                title="Code Projet">
                             <select id="fridayExtra" name="fridayExtra"></select>
                         </div>
                     </div>

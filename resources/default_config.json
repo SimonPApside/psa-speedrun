@@ -1,16 +1,19 @@
 {
     "workHours": 8,
     "restTime": 1,
-    "defaultActivity": "PROJET",
-    "defaultProject": "",
     "monday": "NA",
     "mondayExtra": "NONE",
+    "mondayProject": "",
     "tuesday": "NA",
     "tuesdayExtra": "NONE",
+    "tuesdayProject": "",
     "wednesday": "NA",
     "wednesdayExtra": "NONE",
+    "wednesdayProject": "",
     "thursday": "NA",
     "thursdayExtra": "NONE",
+    "thursdayProject": "",
     "friday": "NA",
-    "fridayExtra": "NONE"
+    "fridayExtra": "NONE",
+    "fridayProject": ""
 }
