@@ -24,6 +24,9 @@
         "https://psa-fs.ent.cgi.com/psc/fsprda/EMPLOYEE/ERP/c/*"
       ],
       "js": [
+        "content/dom-utils.js",
+        "content/fill-hours.js",
+        "content/fill-rest.js",
         "content.js"
       ]
     }

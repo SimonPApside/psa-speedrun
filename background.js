@@ -23,6 +23,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ status: contentScriptStatus[request.tabId] || { loaded: false } });
 
   } else if (request.message === 'GET_PUBLIC_HOLIDAYS') {
+    console.log(request.data);
     getJoursFeriesOfWeek(new Date(request.data)).then(result => sendResponse(result));
   }
 
@@ -61,6 +62,8 @@ async function getJoursFeriesOfWeek(date) {
     jours = joursFeries(year);
     await chrome.storage.local.set({ [storageKey]: jours });
   }
+
+  console.log(jours);
 
   return getWeekJoursFeries(date, jours);
 }
