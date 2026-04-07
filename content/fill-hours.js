@@ -2,9 +2,6 @@
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 
-// The PSA row used for bank holidays
-const HOLIDAY_ROW_ID = 'trEX_TRC_MAP_VW$0_row24';
-
 // The default activity code applied when claiming an empty/new project row
 const DEFAULT_ACTIVITY = 'PROJET';
 
@@ -33,7 +30,9 @@ async function fillInputs(holidays = []) {
 
   const hoursValue = getDailyHours(doc, settings.workHours);
   const { holidayDates, periodEndDate } = parseHolidays(doc, holidays);
-  const holidayRow = holidayDates.length > 0 ? doc.getElementById(HOLIDAY_ROW_ID) : null;
+  const holidayRow = holidayDates.length > 0
+    ? resolveRowByLabel(doc, config.publicHoliday.value, config.publicHoliday.label, config.publicHoliday)
+    : null;
 
   for (let i = 0; i < 5; i++) {
     const dayKey = DAYS[i];
@@ -46,7 +45,8 @@ async function fillInputs(holidays = []) {
 
     const extraRowId = settings[dayKey + 'Extra'];
     if (extraRowId && extraRowId !== 'NONE') {
-      const row = doc.getElementById(extraRowId);
+      const extraEntry = config.extraInputOptions.find(o => o.value === extraRowId);
+      const row = resolveRowByLabel(doc, extraRowId, extraEntry?.label ?? extraRowId, extraEntry);
       const input = row?.querySelector(`input[name^="POL_TIME${i + 2}$"]`);
       if (input) setIfEmpty(input, hoursValue);
       continue;

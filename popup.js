@@ -5,6 +5,9 @@
 const TARGET_URL = 'https://psa-fs.ent.cgi.com/psc/fsprda/EMPLOYEE/ERP/c/';
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 
+// Populated at startup from config.json (transportOptions with green:true)
+let greenTransportValues = new Set();
+
 // Loaded from JSON at startup
 let DEFAULT_CONFIG = null;
 
@@ -21,7 +24,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     DEFAULT_CONFIG = defaultConfig;
 
-    if (configData) populateSelectOptions(configData);
+    if (configData) {
+        populateSelectOptions(configData);
+        if (configData.transportOptions) {
+            greenTransportValues = new Set(
+                configData.transportOptions
+                    .filter(opt => opt.green)
+                    .map(opt => opt.value)
+            );
+        }
+    }
 
     // 2. Restore saved state from storage
     const defaultStorage = buildDefaultStorage();
@@ -59,7 +71,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    // 8. Check PSA page status
+    // 8. Bicycle badge: load count & register reset
+    chrome.storage.sync.get({ bicycleCount: 0 }, (items) => {
+        updateBikeCountDisplay(items.bicycleCount);
+    });
+    document.getElementById('bikeResetBtn').addEventListener('click', () => {
+        if (!confirm('Remettre le compteur vélo à zéro ?')) return;
+        chrome.storage.sync.set({ bicycleCount: 0, creditedGreenDates: [] }, () => {
+            updateBikeCountDisplay(0);
+            flashInstruction('🚲 Compteur vélo remis à zéro', 'success');
+        });
+    });
+
+    // 9. Check PSA page status
     await checkExtensionStatus();
 });
 
@@ -139,20 +163,27 @@ async function fillForm() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const profileId = document.getElementById('activeProfileSelect').value;
 
-    if (profileId === 'custom') {
-        // Temporarily write the form values to storage so content.js can read them
-        const config = getFormConfig();
-        await chrome.storage.sync.set({ currentConfig: config });
+    // Fetch period info to increment bike counter for the whole week
+    chrome.tabs.sendMessage(tab.id, { type: 'GET_PERIOD_INFO' }, (response) => {
+        if (response && response.periodEndDate) {
+            incrementBikeCountIfNeeded(response.periodEndDate);
+        }
 
-        chrome.tabs.sendMessage(tab.id, { type: 'FILL_FORM' }, (response) => {
-            // Clean up only after content.js confirms fillInputsRest is done
-            if (response && response.success) {
-                chrome.storage.sync.remove('currentConfig');
-            }
-        });
-    } else {
-        chrome.tabs.sendMessage(tab.id, { type: 'FILL_FORM' });
-    }
+        if (profileId === 'custom') {
+            // Temporarily write the form values to storage so content.js can read them
+            const config = getFormConfig();
+            chrome.storage.sync.set({ currentConfig: config }, () => {
+                chrome.tabs.sendMessage(tab.id, { type: 'FILL_FORM' }, (fillResponse) => {
+                    // Clean up only after content.js confirms fillInputsRest is done
+                    if (fillResponse && fillResponse.success) {
+                        chrome.storage.sync.remove('currentConfig');
+                    }
+                });
+            });
+        } else {
+            chrome.tabs.sendMessage(tab.id, { type: 'FILL_FORM' });
+        }
+    });
 }
 
 // ============================================================
@@ -333,6 +364,63 @@ function populateDatalist(datalistId, items) {
             datalist.appendChild(option);
         }
     });
+}
+
+// ============================================================
+// BICYCLE COUNTER
+// ============================================================
+
+/**
+ * Reads the 5 transport selects and increments bicycleCount in storage
+ * for each green day that has not been counted yet for its specific date.
+ *
+ * @param {string} periodEndDateStr - The "DD/MM/YYYY" period end date from PSA.
+ */
+function incrementBikeCountIfNeeded(periodEndDateStr) {
+    if (!periodEndDateStr) return;
+
+    // periodEndDateStr is "DD/MM/YYYY" from PSA (Saturday)
+    const [day, month, year] = periodEndDateStr.split('/').map(Number);
+    const periodEndDate = new Date(year, month - 1, day);
+    periodEndDate.setHours(12, 0, 0, 0); // safeguard for DST/timezone shifts
+
+    chrome.storage.sync.get({ bicycleCount: 0, creditedGreenDates: [] }, (items) => {
+        let newCount = items.bicycleCount;
+        let newCreditedDates = [...items.creditedGreenDates];
+        let hasChanged = false;
+
+        for (let i = 0; i < 5; i++) {
+            const dayKey = DAYS[i];
+            const transportEl = document.getElementById(dayKey);
+            if (!transportEl) continue;
+
+            const transportValue = transportEl.value;
+            if (greenTransportValues.has(transportValue)) {
+                // Calculate actual date for this weekday (Mon=0...Fri=4)
+                const dayDate = new Date(periodEndDate);
+                dayDate.setDate(dayDate.getDate() - (5 - i));
+                const dateStr = dayDate.toISOString().slice(0, 10); // 'YYYY-MM-DD'
+
+                if (!newCreditedDates.includes(dateStr)) {
+                    newCount++;
+                    newCreditedDates.push(dateStr);
+                    hasChanged = true;
+                }
+            }
+        }
+
+        if (hasChanged) {
+            chrome.storage.sync.set({ bicycleCount: newCount, creditedGreenDates: newCreditedDates }, () => {
+                updateBikeCountDisplay(newCount);
+            });
+        }
+    });
+}
+
+/** Updates the bike count number shown in the badge. */
+function updateBikeCountDisplay(count) {
+    const el = document.getElementById('bikeCount');
+    if (el) el.textContent = count;
 }
 
 // ============================================================

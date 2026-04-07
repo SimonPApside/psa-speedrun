@@ -1,4 +1,8 @@
 {
+    "publicHoliday": {
+        "label": "Jour férié",
+        "value": "trEX_TRC_MAP_VW$0_row29"
+    },
     "extraInputOptions": [
         {
             "value": "NONE",
@@ -118,11 +122,13 @@
         },
         {
             "value": "VCGI",
-            "label": "Vélo site CGI"
+            "label": "Vélo site CGI",
+            "green": true
         },
         {
             "value": "VCLI",
-            "label": "Vélo site client"
+            "label": "Vélo site client",
+            "green": true
         }
     ],
     "restTimeOptions": [

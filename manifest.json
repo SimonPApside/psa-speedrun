@@ -25,6 +25,7 @@
       ],
       "js": [
         "content/dom-utils.js",
+        "content/row-resolver.js",
         "content/fill-hours.js",
         "content/fill-rest.js",
         "content.js"

@@ -33,6 +33,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'CHECK_STATUS') {
     sendResponse({ loaded: isReady, url: window.location.href });
 
+  } else if (request.type === 'GET_PERIOD_INFO') {
+    const doc = getIframeDoc();
+    const periodEndEl = doc?.getElementById('EX_TIME_HDR_PERIOD_END_DT');
+    sendResponse({ periodEndDate: periodEndEl?.innerText || null });
+
   } else if (request.type === 'FILL_FORM') {
     if (!config) {
       sendResponse({ success: false });

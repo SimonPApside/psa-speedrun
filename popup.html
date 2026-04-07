@@ -391,6 +391,72 @@
             color: var(--text-muted);
             margin-top: 2px;
         }
+
+        /* Bicycle Badge */
+        .bike-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-bottom: 1px solid #bbf7d0;
+        }
+
+        .bike-badge-icon {
+            font-size: 1.4rem;
+            line-height: 1;
+        }
+
+        .bike-badge-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .bike-badge-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #15803d;
+            white-space: nowrap;
+        }
+
+        .bike-badge-count {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+
+        .bike-badge-count .count-number {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #16a34a;
+            line-height: 1;
+        }
+
+        .bike-badge-count .count-unit {
+            font-size: 0.75rem;
+            color: #4ade80;
+            font-weight: 500;
+        }
+
+        .bike-reset-btn {
+            background: transparent;
+            border: 1px solid #86efac;
+            color: #15803d;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .bike-reset-btn:hover {
+            background: #bbf7d0;
+            border-color: #4ade80;
+        }
     </style>
 </head>
 
@@ -417,6 +483,19 @@
                     <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
             </button>
+        </div>
+
+        <!-- Bicycle Badge -->
+        <div class="bike-badge">
+            <div class="bike-badge-icon">🚲</div>
+            <div class="bike-badge-info">
+                <div class="bike-badge-label">Trajets vélo au bureau</div>
+                <div class="bike-badge-count">
+                    <span id="bikeCount" class="count-number">0</span>
+                    <span class="count-unit">jour(s)</span>
+                </div>
+            </div>
+            <button id="bikeResetBtn" class="bike-reset-btn" title="Remettre à zéro">Réinitialiser</button>
         </div>
 
         <!-- Configuration Accordion -->
