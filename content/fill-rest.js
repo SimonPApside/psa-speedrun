@@ -29,7 +29,7 @@ function fillInputsRest(onDone) {
       const option = config.extraInputOptions.find(o => o.value === extraId);
       // Resolve the row by label (heals stale IDs in-memory) to confirm it's still the right row.
       // We only need the resolution side-effect here; skipRestAndLocation comes from config.
-      resolveRowByLabel(doc, extraId, option?.label ?? extraId, option);
+      //resolveRowByLabel(doc, extraId, option?.label ?? extraId, option);
       return option?.skipRestAndLocation === true;
     });
 

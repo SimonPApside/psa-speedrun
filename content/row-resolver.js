@@ -27,15 +27,7 @@ function resolveRowByLabel(doc, storedId, label, entry) {
   // 2. Slow path: scan all candidate rows.
   const allRows = doc.querySelectorAll('[id^="trEX_TRC_MAP_VW$0_row"]');
   for (const row of allRows) {
-    if (rowContainsLabel(row, label)) {
-      const correctedId = row.id;
-      console.warn(
-        `[PSA Speedrun] Row ID for "${label}" was stale (was: "${storedId}", now: "${correctedId}"). Corrected in-memory.`
-      );
-      // Heal the in-memory config entry so future calls use the fast path.
-      if (entry) entry.value = correctedId;
-      return row;
-    }
+    if (rowContainsLabel(row, label)) return row;
   }
 
   console.error(`[PSA Speedrun] Could not find any row matching label "${label}".`);
