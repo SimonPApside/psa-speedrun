@@ -83,6 +83,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
+    const bikeDateInput = document.getElementById('bikeDateInput');
+    const currentYear = new Date().getFullYear();
+    bikeDateInput.min = `${currentYear}-01-01`;
+    bikeDateInput.max = `${currentYear}-12-31`;
+
+    document.getElementById('bikeAddBtn').addEventListener('click', () => {
+        // Modern browsers support showPicker(), fallback to click()
+        if (bikeDateInput.showPicker) {
+            bikeDateInput.showPicker();
+        } else {
+            bikeDateInput.click();
+        }
+    });
+
+    bikeDateInput.addEventListener('change', (e) => {
+        if (e.target.value) {
+            addManualGreenDate(e.target.value);
+            e.target.value = ''; // Reset for next use
+        }
+    });
+
     // 9. Check PSA page status
     await checkExtensionStatus();
 });
@@ -421,6 +442,28 @@ function incrementBikeCountIfNeeded(periodEndDateStr) {
 function updateBikeCountDisplay(count) {
     const el = document.getElementById('bikeCount');
     if (el) el.textContent = count;
+}
+
+/**
+ * Manually adds a green date to the counter.
+ *
+ * @param {string} dateStr - The 'YYYY-MM-DD' date string.
+ */
+function addManualGreenDate(dateStr) {
+    chrome.storage.sync.get({ bicycleCount: 0, creditedGreenDates: [] }, (items) => {
+        if (items.creditedGreenDates.includes(dateStr)) {
+            flashInstruction('⚠️ Date déjà comptabilisée', 'warning');
+            return;
+        }
+
+        const newCount = items.bicycleCount + 1;
+        const newCreditedDates = [...items.creditedGreenDates, dateStr];
+
+        chrome.storage.sync.set({ bicycleCount: newCount, creditedGreenDates: newCreditedDates }, () => {
+            updateBikeCountDisplay(newCount);
+            flashInstruction('🚲 Trajet ajouté !', 'success');
+        });
+    });
 }
 
 // ============================================================
