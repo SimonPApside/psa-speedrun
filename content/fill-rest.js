@@ -5,7 +5,7 @@
  * Skips days that use an absence type flagged with `skipRestAndLocation`.
  * @param {Function} onDone - Called when filling is done and the form is saved.
  */
-function fillInputsRest(onDone) {
+function fillInputsRest(holidays = [], onDone) {
   const intervalId = setInterval(async () => {
     if (!document.getElementById('PT_AGSTARTPAGE_NUI')) return;
 
@@ -23,13 +23,16 @@ function fillInputsRest(onDone) {
 
     const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 
-    const skipDay = days.map(day => {
+    const { holidayDates, periodEndDate } = parseHolidays(doc, holidays);
+
+    const skipDay = days.map((day, i) => {
+      // 1. Skip if it's a detected bank holiday
+      if (isDayHoliday(periodEndDate, holidayDates, i)) return true;
+
+      // 2. Skip if it's an absence type flagged to skip (e.g., Vacation/RTT)
       const extraId = settings[day + 'Extra'];
       if (!extraId || extraId === 'NONE') return false;
       const option = config.extraInputOptions.find(o => o.value === extraId);
-      // Resolve the row by label (heals stale IDs in-memory) to confirm it's still the right row.
-      // We only need the resolution side-effect here; skipRestAndLocation comes from config.
-      //resolveRowByLabel(doc, extraId, option?.label ?? extraId, option);
       return option?.skipRestAndLocation === true;
     });
 

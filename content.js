@@ -52,7 +52,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         targetId: 'UC_EX_WRK_UC_TI_FRA_LINK'
       });
 
-      fillInputsRest(() => sendResponse({ success: true }));
+      fillInputsRest(confirmedHolidays, () => sendResponse({ success: true }));
     })();
   }
 
