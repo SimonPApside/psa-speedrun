@@ -18,12 +18,12 @@ let DEFAULT_CONFIG = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Load JSON config files (options + default/empty configs)
-    const [configData, defaultConfig] = await Promise.all([
+    const [configData, defaultProfile] = await Promise.all([
         loadJson('resources/config.json'),
         loadJson('resources/default_profile.json')
     ]);
 
-    DEFAULT_CONFIG = defaultConfig;
+    DEFAULT_CONFIG = defaultProfile;
 
     if (configData) {
         populateSelectOptions(configData);
@@ -128,7 +128,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         flashInstruction("⏳ Recherche en cours...", "info");
         chrome.tabs.sendMessage(tab.id, { type: 'SCRAPE_PROJECT_CODES', force: true }, (response) => {
-            console.log(response);
             if (response && response.success) {
                 chrome.storage.local.get({ projectCodes: [] }, (items) => {
                     populateProjectDatalist(items.projectCodes);

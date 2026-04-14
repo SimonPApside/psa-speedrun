@@ -5,11 +5,13 @@
   "description": "Remplit automatiquement les feuilles de temps PSA",
   "permissions": [
     "activeTab",
+    "tabs",
     "scripting",
-    "storage"
+    "storage",
+    "notifications"
   ],
   "host_permissions": [
-    "https://psa-fs.ent.cgi.com/psc/fsprda/EMPLOYEE/ERP/c/*"
+    "<all_urls>"
   ],
   "background": {
     "service_worker": "background.js",
