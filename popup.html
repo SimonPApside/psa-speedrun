@@ -457,6 +457,29 @@
             background: #bbf7d0;
             border-color: #4ade80;
         }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            padding: 2px;
+            cursor: pointer;
+            color: var(--secondary);
+            display: inline-flex;
+            align-items: center;
+            vertical-align: middle;
+            transition: color 0.2s, transform 0.2s;
+            margin-left: 4px;
+        }
+
+        .icon-btn:hover {
+            color: var(--primary);
+            transform: rotate(30deg);
+        }
+
+        .icon-btn svg {
+            width: 14px;
+            height: 14px;
+        }
     </style>
 </head>
 
@@ -495,11 +518,15 @@
                     <span class="count-unit">jour(s)</span>
                 </div>
             </div>
-            <div style="display: flex; gap: 4px;">
-                <button id="bikeAddBtn" class="bike-reset-btn" title="Ajouter un trajet manuel">Ajouter</button>
+            <div style="display: flex; gap: 4px; align-items: center;">
+                <button id="bikeModifyBtn" class="bike-reset-btn" title="Modifier le compteur manuel">Modifier</button>
+                <div id="bikeUpdateArea" style="display: none; align-items: center; gap: 4px;">
+                    <input type="number" id="bikeManualInput" min="1" max="365"
+                        style="width: 45px; padding: 3px; border: 1px solid #86efac; border-radius: 4px; font-size: 0.75rem;">
+                    <button id="bikeConfirmBtn" class="bike-reset-btn" style="padding: 3px 6px;">OK</button>
+                </div>
                 <button id="bikeResetBtn" class="bike-reset-btn" title="Remettre à zéro">Réinitialiser</button>
             </div>
-            <input type="date" id="bikeDateInput" style="display: none;">
         </div>
 
         <!-- Configuration Accordion -->
@@ -530,7 +557,16 @@
                         <div class="weekday-row header">
                             <div class="day-label">Jour</div>
                             <div>Transport</div>
-                            <div>Code Projet</div>
+                            <div>Code Projet
+                                <button id="refreshProjectsBtn" type="button" class="icon-btn"
+                                    title="Rechercher les codes projet sur PSA">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round">
+                                        <path
+                                            d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0118.8-4.3M22 12.5a10 10 0 01-18.8 4.3" />
+                                    </svg>
+                                </button>
+                            </div>
                             <div>Spécifique</div>
                         </div>
 
@@ -539,7 +575,7 @@
                             <div class="day-label">Lundi</div>
                             <select id="monday" name="monday" required title="Transport"></select>
                             <input type="text" id="mondayProject" name="mondayProject" placeholder="PROJ-001"
-                                title="Code Projet">
+                                title="Code Projet" list="projectCodesList">
                             <select id="mondayExtra" name="mondayExtra" title="Extra"></select>
                         </div>
 
@@ -548,7 +584,7 @@
                             <div class="day-label">Mardi</div>
                             <select id="tuesday" name="tuesday" required></select>
                             <input type="text" id="tuesdayProject" name="tuesdayProject" placeholder="PROJ-001"
-                                title="Code Projet">
+                                title="Code Projet" list="projectCodesList">
                             <select id="tuesdayExtra" name="tuesdayExtra"></select>
                         </div>
 
@@ -557,7 +593,7 @@
                             <div class="day-label">Mercredi</div>
                             <select id="wednesday" name="wednesday" required></select>
                             <input type="text" id="wednesdayProject" name="wednesdayProject" placeholder="PROJ-001"
-                                title="Code Projet">
+                                title="Code Projet" list="projectCodesList">
                             <select id="wednesdayExtra" name="wednesdayExtra"></select>
                         </div>
 
@@ -566,7 +602,7 @@
                             <div class="day-label">Jeudi</div>
                             <select id="thursday" name="thursday" required></select>
                             <input type="text" id="thursdayProject" name="thursdayProject" placeholder="PROJ-001"
-                                title="Code Projet">
+                                title="Code Projet" list="projectCodesList">
                             <select id="thursdayExtra" name="thursdayExtra"></select>
                         </div>
 
@@ -575,7 +611,7 @@
                             <div class="day-label">Vendredi</div>
                             <select id="friday" name="friday" required></select>
                             <input type="text" id="fridayProject" name="fridayProject" placeholder="PROJ-001"
-                                title="Code Projet">
+                                title="Code Projet" list="projectCodesList">
                             <select id="fridayExtra" name="fridayExtra"></select>
                         </div>
                     </div>
@@ -588,6 +624,7 @@
             </div>
         </div>
     </div>
+    <datalist id="projectCodesList"></datalist>
     <script src="popup.js"></script>
 </body>
 

@@ -30,13 +30,25 @@
         "content/fill-rest.js",
         "content.js"
       ]
+    },
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "exclude_matches": [
+        "https://psa-fs.ent.cgi.com/psc/fsprda/EMPLOYEE/ERP/c/*"
+      ],
+      "js": [
+        "content/saisie.js"
+      ]
     }
   ],
   "web_accessible_resources": [
     {
       "resources": [
         "resources/config.json",
-        "resources/default_config.json",
+        "resources/default_profile.json",
         "resources/triggerClickFunction.js"
       ],
       "matches": [

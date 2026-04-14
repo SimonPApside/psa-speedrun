@@ -4,6 +4,7 @@
 
 const TARGET_URL = 'https://psa-fs.ent.cgi.com/psc/fsprda/EMPLOYEE/ERP/c/';
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+const DAY_BY_YEAR = 365;
 
 // Populated at startup from config.json (transportOptions with green:true)
 let greenTransportValues = new Set();
@@ -19,7 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 1. Load JSON config files (options + default/empty configs)
     const [configData, defaultConfig] = await Promise.all([
         loadJson('resources/config.json'),
-        loadJson('resources/default_config.json')
+        loadJson('resources/default_profile.json')
     ]);
 
     DEFAULT_CONFIG = defaultConfig;
@@ -79,29 +80,64 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!confirm('Remettre le compteur vélo à zéro ?')) return;
         chrome.storage.sync.set({ bicycleCount: 0, creditedGreenDates: [] }, () => {
             updateBikeCountDisplay(0);
+            document.getElementById('bikeUpdateArea').style.display = 'none';
+            document.getElementById('bikeModifyBtn').style.display = 'inline-block';
             flashInstruction('🚲 Compteur vélo remis à zéro', 'success');
         });
     });
 
-    const bikeDateInput = document.getElementById('bikeDateInput');
-    const currentYear = new Date().getFullYear();
-    bikeDateInput.min = `${currentYear}-01-01`;
-    bikeDateInput.max = `${currentYear}-12-31`;
+    document.getElementById('bikeModifyBtn').addEventListener('click', (e) => {
+        const area = document.getElementById('bikeUpdateArea');
+        const input = document.getElementById('bikeManualInput');
+        const currentCount = document.getElementById('bikeCount').textContent;
 
-    document.getElementById('bikeAddBtn').addEventListener('click', () => {
-        // Modern browsers support showPicker(), fallback to click()
-        if (bikeDateInput.showPicker) {
-            bikeDateInput.showPicker();
-        } else {
-            bikeDateInput.click();
-        }
+        area.style.display = 'flex';
+        e.target.style.display = 'none'; // Hide the 'Modifier' button
+        input.value = currentCount;
+        input.focus();
     });
 
-    bikeDateInput.addEventListener('change', (e) => {
-        if (e.target.value) {
-            addManualGreenDate(e.target.value);
-            e.target.value = ''; // Reset for next use
+    document.getElementById('bikeConfirmBtn').addEventListener('click', () => {
+        const input = document.getElementById('bikeManualInput');
+        const val = parseInt(input.value, 10);
+
+        if (isNaN(val) || val < 1 || val > DAY_BY_YEAR) {
+            flashInstruction(`⚠️ Entre 1 et ${DAY_BY_YEAR}`, 'warning');
+            return;
         }
+
+        chrome.storage.sync.set({ bicycleCount: val }, () => {
+            updateBikeCountDisplay(val);
+            document.getElementById('bikeUpdateArea').style.display = 'none';
+            document.getElementById('bikeModifyBtn').style.display = 'inline-block'; // Show the button again
+            flashInstruction('🚲 Compteur mis à jour', 'success');
+        });
+    });
+
+    // 9. Project codes auto-fill
+    chrome.storage.local.get({ projectCodes: [] }, (items) => {
+        populateProjectDatalist(items.projectCodes);
+    });
+
+    document.getElementById('refreshProjectsBtn').addEventListener('click', async () => {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tab.url || !tab.url.includes(TARGET_URL)) {
+            flashInstruction("❌ Action seulement sur PSA", 'warning');
+            return;
+        }
+
+        flashInstruction("⏳ Recherche en cours...", "info");
+        chrome.tabs.sendMessage(tab.id, { type: 'SCRAPE_PROJECT_CODES', force: true }, (response) => {
+            console.log(response);
+            if (response && response.success) {
+                chrome.storage.local.get({ projectCodes: [] }, (items) => {
+                    populateProjectDatalist(items.projectCodes);
+                    flashInstruction(`✓ ${items.projectCodes.length} codes trouvés`, "success");
+                });
+            } else {
+                flashInstruction("⚠️ Échec de la recherche", "warning");
+            }
+        });
     });
 
     // 9. Check PSA page status
@@ -373,6 +409,18 @@ function populateSelect(selectId, options) {
     });
 }
 
+function populateProjectDatalist(codes) {
+    const datalist = document.getElementById('projectCodesList');
+    if (!datalist) return;
+    datalist.innerHTML = '';
+    const uniqueCodes = [...new Set(codes)].sort();
+    uniqueCodes.forEach(code => {
+        const option = document.createElement('option');
+        option.value = code;
+        datalist.appendChild(option);
+    });
+}
+
 function populateDatalist(datalistId, items) {
     const datalist = document.getElementById(datalistId);
     if (!datalist) return;
@@ -416,17 +464,25 @@ function incrementBikeCountIfNeeded(periodEndDateStr) {
             if (!transportEl) continue;
 
             const transportValue = transportEl.value;
-            if (greenTransportValues.has(transportValue)) {
-                // Calculate actual date for this weekday (Mon=0...Fri=4)
-                const dayDate = new Date(periodEndDate);
-                dayDate.setDate(dayDate.getDate() - (5 - i));
-                const dateStr = dayDate.toISOString().slice(0, 10); // 'YYYY-MM-DD'
+            const isGreenCurrently = greenTransportValues.has(transportValue);
 
-                if (!newCreditedDates.includes(dateStr)) {
-                    newCount++;
-                    newCreditedDates.push(dateStr);
-                    hasChanged = true;
-                }
+            // Calculate actual date for this weekday (Mon=0...Fri=4)
+            const dayDate = new Date(periodEndDate);
+            dayDate.setDate(dayDate.getDate() - (5 - i));
+            const dateStr = dayDate.toISOString().slice(0, 10); // 'YYYY-MM-DD'
+
+            const isAlreadyCredited = newCreditedDates.includes(dateStr);
+
+            if (isGreenCurrently && !isAlreadyCredited) {
+                // Newly green: increment
+                newCount++;
+                newCreditedDates.push(dateStr);
+                hasChanged = true;
+            } else if (!isGreenCurrently && isAlreadyCredited) {
+                // No longer green: decrement
+                newCount = Math.max(0, newCount - 1);
+                newCreditedDates = newCreditedDates.filter(d => d !== dateStr);
+                hasChanged = true;
             }
         }
 
@@ -444,27 +500,6 @@ function updateBikeCountDisplay(count) {
     if (el) el.textContent = count;
 }
 
-/**
- * Manually adds a green date to the counter.
- *
- * @param {string} dateStr - The 'YYYY-MM-DD' date string.
- */
-function addManualGreenDate(dateStr) {
-    chrome.storage.sync.get({ bicycleCount: 0, creditedGreenDates: [] }, (items) => {
-        if (items.creditedGreenDates.includes(dateStr)) {
-            flashInstruction('⚠️ Date déjà comptabilisée', 'warning');
-            return;
-        }
-
-        const newCount = items.bicycleCount + 1;
-        const newCreditedDates = [...items.creditedGreenDates, dateStr];
-
-        chrome.storage.sync.set({ bicycleCount: newCount, creditedGreenDates: newCreditedDates }, () => {
-            updateBikeCountDisplay(newCount);
-            flashInstruction('🚲 Trajet ajouté !', 'success');
-        });
-    });
-}
 
 // ============================================================
 // JSON LOADER

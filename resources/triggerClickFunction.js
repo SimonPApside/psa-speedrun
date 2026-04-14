@@ -7,7 +7,7 @@
     const doc = iframe.contentWindow?.document;
     if (!doc) return;
 
-    let el = targetId ? doc.getElementById(targetId) : null;
+    let el = targetId ? doc.getElementById(targetId) ?? document.getElementById(targetId) : null;
     if (!el && targetName) {
         el = doc.querySelector(`[name="${targetName}"]`);
     }
