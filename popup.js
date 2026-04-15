@@ -12,6 +12,9 @@ let greenTransportValues = new Set();
 // Loaded from JSON at startup
 let DEFAULT_CONFIG = null;
 
+// Temporary storage for import
+let pendingImportData = null;
+
 // ============================================================
 // INIT
 // ============================================================
@@ -47,6 +50,52 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 3. Accordion toggle
     document.getElementById('toggleConfigBtn').addEventListener('click', toggleAccordion);
+
+    // 3b. Settings Accordion (Import/Export)
+    document.getElementById('toggleSettingsBtn').addEventListener('click', toggleSettingsAccordion);
+
+    // Import / Export Logic
+    document.getElementById('exportBtn').addEventListener('click', exportProfiles);
+    
+    const dropZone = document.getElementById('dropZone');
+    const importFile = document.getElementById('importFile');
+
+    dropZone.addEventListener('click', () => importFile.click());
+    importFile.addEventListener('change', handleFileSelect);
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'var(--primary)';
+        dropZone.style.background = '#f0f7ff';
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.style.borderColor = 'var(--border)';
+        dropZone.style.background = 'transparent';
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'var(--border)';
+        dropZone.style.background = 'transparent';
+        const file = e.dataTransfer.files[0];
+        if (file && file.type === "application/json") {
+            handleFile(file);
+        } else {
+            flashInstruction('❌ Format .json requis', 'warning');
+        }
+    });
+
+    document.getElementById('openTabBtn').addEventListener('click', () => {
+        chrome.tabs.create({ url: 'popup.html' });
+    });
+
+    document.getElementById('cancelImportBtn').addEventListener('click', () => {
+        document.getElementById('importModal').style.display = 'none';
+        pendingImportData = null;
+    });
+
+    document.getElementById('confirmImportBtn').addEventListener('click', executeImport);
 
     // 4. Profile selector
     document.getElementById('activeProfileSelect').addEventListener('change', (e) => {
@@ -139,7 +188,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    // 9. Check PSA page status
+    // 10. Check PSA page status
     await checkExtensionStatus();
 });
 
@@ -166,7 +215,6 @@ function setProfile(profileId, storageItems) {
     if (profileId === 'custom') {
         loadConfigIntoForm({ ...DEFAULT_CONFIG, profileName: 'Personnalisé' });
         document.getElementById('profileName').parentElement.style.display = 'none';
-        openAccordion();
         return;
     }
 
@@ -226,11 +274,9 @@ async function fillForm() {
         }
 
         if (profileId === 'custom') {
-            // Temporarily write the form values to storage so content.js can read them
             const config = getFormConfig();
             chrome.storage.sync.set({ currentConfig: config }, () => {
                 chrome.tabs.sendMessage(tab.id, { type: 'FILL_FORM' }, (fillResponse) => {
-                    // Clean up only after content.js confirms fillInputsRest is done
                     if (fillResponse && fillResponse.success) {
                         chrome.storage.sync.remove('currentConfig');
                     }
@@ -283,10 +329,7 @@ function showInstruction(msg, type) {
     el.className = `status-bar show ${type}`;
 }
 
-/**
- * Temporarily replaces the instruction bar with a feedback message,
- * then restores the previous message after 1.5s.
- */
+/** Temporarily replaces the instruction bar with a feedback message. */
 function flashInstruction(msg, type) {
     const el = document.getElementById('instructions');
     const prevText = el.textContent;
@@ -310,6 +353,9 @@ function toggleAccordion() {
     const btn = document.getElementById('toggleConfigBtn');
     const isOpening = !accordion.classList.contains('open');
 
+    // Close settings if opening config
+    if (isOpening) closeSettingsAccordion();
+
     accordion.classList.toggle('open');
     btn.classList.toggle('open');
     document.body.classList.toggle('expanded', isOpening);
@@ -327,8 +373,33 @@ function closeAccordion() {
     document.body.classList.remove('expanded');
 }
 
+// Special helpers for Settings (to keep originals clean)
+function toggleSettingsAccordion() {
+    const accordion = document.getElementById('settingsAccordion');
+    const btn = document.getElementById('toggleSettingsBtn');
+    const isOpening = !accordion.classList.contains('open');
+
+    // Close config if opening settings
+    if (isOpening) closeAccordion();
+
+    accordion.classList.toggle('open');
+    btn.classList.toggle('open');
+    document.body.classList.toggle('expanded', isOpening);
+}
+
+function closeSettingsAccordion() {
+    const accordion = document.getElementById('settingsAccordion');
+    const btn = document.getElementById('toggleSettingsBtn');
+    if (accordion) accordion.classList.remove('open');
+    if (btn) btn.classList.remove('open');
+    // Only remove expanded if config is also closed
+    if (!document.getElementById('configAccordion').classList.contains('open')) {
+        document.body.classList.remove('expanded');
+    }
+}
+
 function updateFooterVisibility(profileId) {
-    const footer = document.querySelector('.config-footer');
+    const footer = document.querySelector('#configAccordion .config-footer');
     if (footer) footer.classList.toggle('hidden', profileId === 'custom');
 }
 
@@ -347,6 +418,104 @@ function updateProfileSelectVisuals(savedProfiles) {
         const name = savedProfiles.profile2?.profileName || 'Profil 2';
         p2.textContent = `👤 ${name}${savedProfiles.profile2 ? '' : ' (Vide)'}`;
     }
+}
+
+// ============================================================
+// IMPORT / EXPORT
+// ============================================================
+
+/** Exports the current active profile to a JSON file. */
+function exportProfiles() {
+    chrome.storage.sync.get(['savedProfiles', 'bicycleCount', 'activeProfileId', 'currentConfig'], (items) => {
+        const activeId = items.activeProfileId;
+        const currentConfig = items.currentConfig;
+
+        const profileToExport = activeId === 'custom'
+            ? { ...currentConfig, profileName: 'Personnalisé' }
+            : (items.savedProfiles[activeId] || currentConfig);
+
+        const data = {
+            version: 1,
+            type: 'single-profile',
+            profile: profileToExport,
+            bicycleCount: items.bicycleCount
+        };
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const fileName = (profileToExport.profileName || 'profile').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        a.href = url;
+        a.download = `psa-${fileName}-${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        flashInstruction('✓ Profil exporté', 'success');
+    });
+}
+
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (file) handleFile(file);
+    event.target.value = '';
+}
+
+/** Reads and validates the imported JSON file before showing the destination modal. */
+function handleFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (!data.profile && !data.savedProfiles) throw new Error('Format invalide');
+            pendingImportData = data;
+            document.getElementById('importFileName').textContent = `Fichier : ${file.name}`;
+            document.getElementById('importModal').style.display = 'flex';
+        } catch (err) {
+            flashInstruction('❌ Erreur de lecture', 'warning');
+        }
+    };
+    reader.readAsText(file);
+}
+
+/** Executes the import into the selected slot (profile1, profile2 or custom). */
+function executeImport() {
+    const targetId = document.getElementById('importTargetSelect').value;
+    if (!pendingImportData) return;
+
+    chrome.storage.sync.get(buildDefaultStorage(), (items) => {
+        let newSavedProfiles = { ...items.savedProfiles };
+        let newCurrentConfig = items.currentConfig;
+        let newBikeCount = items.bicycleCount;
+
+        const importedProfile = pendingImportData.profile || pendingImportData.savedProfiles?.profile1 || DEFAULT_CONFIG;
+
+        if (targetId === 'custom') {
+            newCurrentConfig = { ...importedProfile };
+        } else {
+            newSavedProfiles[targetId] = { ...importedProfile };
+            if (items.activeProfileId === targetId) {
+                newCurrentConfig = { ...importedProfile };
+            }
+        }
+
+        if (pendingImportData.bicycleCount !== undefined) {
+            newBikeCount = pendingImportData.bicycleCount;
+        }
+
+        chrome.storage.sync.set({
+            savedProfiles: newSavedProfiles,
+            currentConfig: newCurrentConfig,
+            bicycleCount: newBikeCount
+        }, () => {
+            updateProfileSelectVisuals(newSavedProfiles);
+            setProfile(items.activeProfileId, { ...items, savedProfiles: newSavedProfiles, currentConfig: newCurrentConfig });
+            updateBikeCountDisplay(newBikeCount); // Update the visual badge immediately
+
+            document.getElementById('importModal').style.display = 'none';
+            pendingImportData = null;
+            flashInstruction(`✓ Importé dans ${targetId}`, 'success');
+            closeSettingsAccordion();
+        });
+    });
 }
 
 // ============================================================
