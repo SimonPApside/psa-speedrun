@@ -38,7 +38,10 @@ function fillInputsRest(holidays = [], onDone) {
 
     fillRestCheckboxes(doc, skipDay);
     fillRestTimeValues(doc, settings.restTime, skipDay);
-    fillLocationCodes(doc, days.map(day => settings[day]), skipDay);
+
+    const amCodes = days.map(day => settings[day + 'AM'] || settings[day] || 'NA');
+    const pmCodes = days.map(day => settings[day + 'PM'] || settings[day] || 'NA');
+    fillLocationCodes(doc, amCodes, pmCodes, skipDay);
 
     doc.querySelector('input[name="#ICSave"]')?.click();
 
@@ -70,12 +73,15 @@ function fillRestTimeValues(doc, restTime, skipDay) {
 }
 
 /** Fills transport/location codes (Mon–Fri = indices 1–5 in each 7-day group). */
-function fillLocationCodes(doc, dailyCodes, skipDay) {
+function fillLocationCodes(doc, amCodes, pmCodes, skipDay) {
   const inputs = Array.from(doc.querySelectorAll('[name^="UC_LOCATION_A"]'));
+  const sessionCodes = [amCodes, pmCodes];
+
   for (let i = 0; i < 2; i++) {
     const group = inputs.slice(i * 7, i * 7 + 7);
+    const codes = sessionCodes[i];
     for (let y = 1; y <= 5; y++) {
-      if (group[y]) setAndDispatch(group[y], skipDay[y - 1] ? 'NA' : dailyCodes[y - 1]);
+      if (group[y]) setAndDispatch(group[y], skipDay[y - 1] ? 'NA' : codes[y - 1]);
     }
   }
 }
