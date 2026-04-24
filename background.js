@@ -112,8 +112,8 @@ async function checkAndNotify() {
   const [targetHour, targetMinute] = settings.reminderTime.split(':').map(Number);
 
   // Determine target days (factor in holidays)
-  const holidays = await getJoursFeriesOfWeek(now)
-    .map(h => new Date(h.date).getDay()).sort((a, b) => b - a);
+  const holidays = await getJoursFeriesOfWeek(now);
+  const holidayDays = holidays.map(h => new Date(h.date).getDay()).sort((a, b) => b - a);
 
   // reminderDays can be an array (new) or reminderDay can be an int (old/fallback)
   const baseDays = Array.isArray(settings.reminderDays)
@@ -124,7 +124,7 @@ async function checkAndNotify() {
   const effectiveDays = baseDays.map(baseDay => {
     let day = baseDay;
     // If a target day is a holiday, move to the previous day
-    holidays.forEach(hDay => {
+    holidayDays.forEach(hDay => {
       if (hDay === day) day--;
     });
     return day;
