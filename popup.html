@@ -70,10 +70,10 @@
 
         select {
             width: 100%;
-            padding: 8px 12px;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            font-size: 0.9rem;
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.85rem;
             font-weight: 500;
             color: var(--text-main);
             background: var(--white);
@@ -941,6 +941,49 @@
                             <select id="fridayExtra" name="fridayExtra"></select>
                         </div>
                     </div>
+
+                    <details class="reminder-details">
+                        <summary>Rappels Automatiques (tous les profils)</summary>
+                        <div class="form-grid">
+                            <div class="form-group" style="flex: 1.5;">
+                                <label>Jours de rappel</label>
+                                <div class="day-picker">
+                                    <input type="checkbox" id="rem-day-1" class="day-checkbox" value="1">
+                                    <label for="rem-day-1" class="day-btn">L</label>
+
+                                    <input type="checkbox" id="rem-day-2" class="day-checkbox" value="2">
+                                    <label for="rem-day-2" class="day-btn">M</label>
+
+                                    <input type="checkbox" id="rem-day-3" class="day-checkbox" value="3">
+                                    <label for="rem-day-3" class="day-btn">M</label>
+
+                                    <input type="checkbox" id="rem-day-4" class="day-checkbox" value="4">
+                                    <label for="rem-day-4" class="day-btn">J</label>
+
+                                    <input type="checkbox" id="rem-day-5" class="day-checkbox" value="5">
+                                    <label for="rem-day-5" class="day-btn">V</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="reminderTime">Heure</label>
+                                <select id="reminderTime" name="reminderTime">
+                                    <option value="08:00">08:00</option>
+                                    <option value="09:00">09:00</option>
+                                    <option value="10:00">10:00</option>
+                                    <option value="11:00">11:00</option>
+                                    <option value="12:00">12:00</option>
+                                    <option value="13:00">13:00</option>
+                                    <option value="14:00">14:00</option>
+                                    <option value="15:00">15:00</option>
+                                    <option value="16:00">16:00</option>
+                                    <option value="17:00">17:00</option>
+                                    <option value="18:00">18:00</option>
+                                    <option value="19:00">19:00</option>
+                                    <option value="20:00">20:00</option>
+                                </select>
+                            </div>
+                        </div>
+                    </details>
 
                     <div class="config-footer">
                         <button type="submit" class="btn-action btn-save">💾 Enregistrer</button>

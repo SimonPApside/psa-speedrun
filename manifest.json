@@ -8,7 +8,8 @@
     "tabs",
     "scripting",
     "storage",
-    "notifications"
+    "notifications",
+    "alarms"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -31,18 +32,6 @@
         "content/fill-hours.js",
         "content/fill-rest.js",
         "content.js"
-      ]
-    },
-    {
-      "matches": [
-        "http://*/*",
-        "https://*/*"
-      ],
-      "exclude_matches": [
-        "https://psa-fs.ent.cgi.com/psc/fsprda/EMPLOYEE/ERP/c/*"
-      ],
-      "js": [
-        "content/saisie.js"
       ]
     }
   ],
