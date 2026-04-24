@@ -50,6 +50,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     (async () => {
       const confirmedHolidays = await askForHolidayConfirmation();
+      const startTime = performance.now();
       await fillInputs(confirmedHolidays);
 
       injectCode(chrome.runtime.getURL('resources/triggerClickFunction.js'), {
@@ -62,7 +63,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (periodEndEl?.innerText) {
           chrome.storage.local.set({ saisieEffectuee: periodEndEl.innerText });
         }
+        const endTime = performance.now();
         sendResponse({ success: true });
+        chrome.runtime.sendMessage({
+          message: 'CREATE_NOTIFICATION',
+          data: `🏁 PSA Time remplit en  ${Number.parseFloat((endTime - startTime) / 1000).toFixed(2)} secondes`
+        });
       });
     })();
   } else if (request.type === 'SCRAPE_PROJECT_CODES') {

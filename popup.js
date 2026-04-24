@@ -76,16 +76,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     chrome.storage.sync.get({ bicycleCount: 0 }, (items) => {
         updateBikeCountDisplay(items.bicycleCount);
     });
-    document.getElementById('bikeResetBtn').addEventListener('click', () => {
-        if (!confirm('Remettre le compteur vélo à zéro ?')) return;
-        chrome.storage.sync.set({ bicycleCount: 0, creditedGreenDates: [] }, () => {
-            updateBikeCountDisplay(0);
-            document.getElementById('bikeUpdateArea').style.display = 'none';
-            document.getElementById('bikeModifyBtn').style.display = 'inline-block';
-            flashInstruction('🚲 Compteur vélo remis à zéro', 'success');
-        });
-    });
-
+    
     document.getElementById('bikeModifyBtn').addEventListener('click', (e) => {
         const area = document.getElementById('bikeUpdateArea');
         const input = document.getElementById('bikeManualInput');
@@ -99,10 +90,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('bikeConfirmBtn').addEventListener('click', () => {
         const input = document.getElementById('bikeManualInput');
-        const val = parseInt(input.value, 10);
+        const val = parseFloat(input.value);
 
-        if (isNaN(val) || val < 1 || val > DAY_BY_YEAR) {
-            flashInstruction(`⚠️ Entre 1 et ${DAY_BY_YEAR}`, 'warning');
+        if (isNaN(val) || val < 0 || val > DAY_BY_YEAR) {
+            flashInstruction(`⚠️ Entre 0 et ${DAY_BY_YEAR}`, 'warning');
             return;
         }
 
@@ -171,7 +162,9 @@ function buildDefaultStorage() {
     return {
         currentConfig: DEFAULT_CONFIG,
         savedProfiles: { profile1: null, profile2: null },
-        activeProfileId: 'profile1'
+        activeProfileId: 'profile1',
+        reminderDays: [4],
+        reminderTime: '11:00'
     };
 }
 
@@ -379,9 +372,24 @@ function updateProfileSelectVisuals(savedProfiles) {
 
 function loadConfigIntoForm(config) {
     if (!config) return;
+
+    // Standard fields
     Object.entries(config).forEach(([key, value]) => {
         const el = document.getElementById(key);
         if (el) el.value = value;
+    });
+
+    // Reminder fields (loaded from global storage, not profile-specific)
+    chrome.storage.sync.get(['reminderDays', 'reminderTime'], (items) => {
+        // Load multiple days
+        if (items.reminderDays) {
+            [1, 2, 3, 4, 5].forEach(d => {
+                const el = document.getElementById(`rem-day-${d}`);
+                if (el) el.checked = items.reminderDays.includes(d);
+            });
+        }
+
+        if (items.reminderTime !== undefined) document.getElementById('reminderTime').value = items.reminderTime;
     });
 
     // Apply strikethrough on load
@@ -405,6 +413,17 @@ function getFormConfig() {
         const el = document.getElementById(key);
         if (el) config[key] = el.type === 'number' ? parseFloat(el.value) : el.value;
     });
+
+    // Save reminder settings globally
+    const reminderDays = [1, 2, 3, 4, 5]
+        .filter(d => document.getElementById(`rem-day-${d}`)?.checked)
+        .map(Number);
+
+    chrome.storage.sync.set({
+        reminderDays: reminderDays,
+        reminderTime: document.getElementById('reminderTime').value
+    });
+
     return config;
 }
 
