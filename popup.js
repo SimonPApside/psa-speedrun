@@ -3,7 +3,6 @@
 // ============================================================
 
 const TARGET_URL = 'https://psa-fs.ent.cgi.com/psc/fsprda/EMPLOYEE/ERP/c/';
-const URL_PSA = 'https://psa-fs.ent.cgi.com/psc/fsprda/EMPLOYEE/ERP/c/NUI_FRAMEWORK.PT_AGSTARTPAGE_NUI.GBL?CONTEXTIDPARAMS=TEMPLATE_ID%3aPTPPNAVCOL&scname=ADMN_UC_SELF_SERVICE_TIME&PanelCollapsible=Y&PTPPB_GROUPLET_ID=UCTI1000&CRefName=ADMN_NAVCOLL_1&AJAXTRANSFER=Y';
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 const DAY_BY_YEAR = 365;
 
@@ -271,7 +270,7 @@ async function checkExtensionStatus() {
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
         if (!tab.url || !tab.url.includes(TARGET_URL)) {
-            showInstruction(`❌ S'utilise sur la page de saisie PSA <a href="${URL_PSA}" class="psa-btn" target="_blank" rel="noopener noreferrer">Site PSA<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-right-icon lucide-arrow-up-right"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></a>`, 'warning');
+            showInstruction("❌ S'utilise sur la page de saisie PSA", 'warning');
             fillButton.style.display = 'none';
             return;
         }
@@ -299,7 +298,6 @@ function showInstruction(msg, type) {
     const el = document.getElementById('instructions');
     el.textContent = msg;
     el.className = `status-bar show ${type}`;
-    el.innerHTML = msg;
 }
 
 /**
