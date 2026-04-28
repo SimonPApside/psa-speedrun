@@ -3,12 +3,20 @@
   "name": "PSA Time Filler",
   "version": "1.0",
   "description": "Remplit automatiquement les feuilles de temps PSA",
+  "icons": {
+    "16": "icons/favicon-16x16.png",
+    "32": "icons/favicon-32x32.png",
+    "48": "icons/favicon-48x48.png",
+    "128": "icons/favicon-128x128.png"
+  },
+
   "permissions": [
     "activeTab",
     "tabs",
     "scripting",
     "storage",
-    "notifications"
+    "notifications",
+    "alarms"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -18,7 +26,11 @@
     "type": "module"
   },
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/favicon-16x16.png",
+      "32": "icons/favicon-32x32.png"
+    }
   },
   "content_scripts": [
     {
@@ -31,18 +43,6 @@
         "content/fill-hours.js",
         "content/fill-rest.js",
         "content.js"
-      ]
-    },
-    {
-      "matches": [
-        "http://*/*",
-        "https://*/*"
-      ],
-      "exclude_matches": [
-        "https://psa-fs.ent.cgi.com/psc/fsprda/EMPLOYEE/ERP/c/*"
-      ],
-      "js": [
-        "content/saisie.js"
       ]
     }
   ],

@@ -125,16 +125,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     chrome.storage.sync.get({ bicycleCount: 0 }, (items) => {
         updateBikeCountDisplay(items.bicycleCount);
     });
-    document.getElementById('bikeResetBtn').addEventListener('click', () => {
-        if (!confirm('Remettre le compteur vélo à zéro ?')) return;
-        chrome.storage.sync.set({ bicycleCount: 0, creditedGreenDates: [] }, () => {
-            updateBikeCountDisplay(0);
-            document.getElementById('bikeUpdateArea').style.display = 'none';
-            document.getElementById('bikeModifyBtn').style.display = 'inline-block';
-            flashInstruction('🚲 Compteur vélo remis à zéro', 'success');
-        });
-    });
-
+    
     document.getElementById('bikeModifyBtn').addEventListener('click', (e) => {
         const area = document.getElementById('bikeUpdateArea');
         const input = document.getElementById('bikeManualInput');
@@ -148,10 +139,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('bikeConfirmBtn').addEventListener('click', () => {
         const input = document.getElementById('bikeManualInput');
-        const val = parseInt(input.value, 10);
+        const val = parseFloat(input.value);
 
-        if (isNaN(val) || val < 1 || val > DAY_BY_YEAR) {
-            flashInstruction(`⚠️ Entre 1 et ${DAY_BY_YEAR}`, 'warning');
+        if (isNaN(val) || val < 0 || val > DAY_BY_YEAR) {
+            flashInstruction(`⚠️ Entre 0 et ${DAY_BY_YEAR}`, 'warning');
             return;
         }
 
@@ -188,7 +179,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    // 10. Check PSA page status
+    // Open/Close afternoon localization select
+    document.querySelectorAll('.day-localization-morning button').forEach((el) => {
+        el.addEventListener('click', () => {
+            const parent = el.parentElement.parentElement;
+            parent.dataset.splitted = !(parent.dataset.splitted === 'true');
+        });
+    });
+
+    // Autofill afternoon select if selects are splitted
+    document.querySelectorAll('.day-localization-morning select').forEach((el) => {
+        el.addEventListener('click', () => {
+            const parent = el.parentElement.parentElement;
+            if (parent.dataset.splitted === 'false') {
+                parent.parentNode.querySelector('.day-localization-afternoon select').value = el.value;
+            }
+        });
+    });
+
+    // 10. Save reminder settings on any change in the UI
+    ['reminderTime', 'rem-day-1', 'rem-day-2', 'rem-day-3', 'rem-day-4', 'rem-day-5'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', () => getFormConfig());
+    });
+
+    // 11. Check PSA page status
     await checkExtensionStatus();
 });
 
@@ -196,7 +211,9 @@ function buildDefaultStorage() {
     return {
         currentConfig: DEFAULT_CONFIG,
         savedProfiles: { profile1: null, profile2: null },
-        activeProfileId: 'profile1'
+        activeProfileId: 'profile1',
+        reminderDays: [4],
+        reminderTime: '11:00'
     };
 }
 
@@ -524,9 +541,24 @@ function executeImport() {
 
 function loadConfigIntoForm(config) {
     if (!config) return;
+
+    // Standard fields
     Object.entries(config).forEach(([key, value]) => {
         const el = document.getElementById(key);
         if (el) el.value = value;
+    });
+
+    // Reminder fields (loaded from global storage, not profile-specific)
+    chrome.storage.sync.get(['reminderDays', 'reminderTime'], (items) => {
+        // Load multiple days
+        if (items.reminderDays) {
+            [1, 2, 3, 4, 5].forEach(d => {
+                const el = document.getElementById(`rem-day-${d}`);
+                if (el) el.checked = items.reminderDays.includes(d);
+            });
+        }
+
+        if (items.reminderTime !== undefined) document.getElementById('reminderTime').value = items.reminderTime;
     });
 
     // Apply strikethrough on load
@@ -550,6 +582,17 @@ function getFormConfig() {
         const el = document.getElementById(key);
         if (el) config[key] = el.type === 'number' ? parseFloat(el.value) : el.value;
     });
+
+    // Save reminder settings globally
+    const reminderDays = [1, 2, 3, 4, 5]
+        .filter(d => document.getElementById(`rem-day-${d}`)?.checked)
+        .map(Number);
+
+    chrome.storage.sync.set({
+        reminderDays: reminderDays,
+        reminderTime: document.getElementById('reminderTime').value
+    });
+
     return config;
 }
 
@@ -558,7 +601,10 @@ function populateSelectOptions(config) {
     if (config.restTimeOptions) populateSelect('restTime', config.restTimeOptions);
 
     if (config.transportOptions) {
-        DAYS.forEach(day => populateSelect(day, config.transportOptions));
+        DAYS.forEach(day => {
+            populateSelect(day + 'AM', config.transportOptions);
+            populateSelect(day + 'PM', config.transportOptions);
+        });
     }
     if (config.extraInputOptions) {
         DAYS.forEach(day => populateSelect(day + 'Extra', config.extraInputOptions));
@@ -628,28 +674,46 @@ function incrementBikeCountIfNeeded(periodEndDateStr) {
 
         for (let i = 0; i < 5; i++) {
             const dayKey = DAYS[i];
-            const transportEl = document.getElementById(dayKey);
-            if (!transportEl) continue;
+            const amEl = document.getElementById(dayKey + 'AM');
+            const pmEl = document.getElementById(dayKey + 'PM');
+            if (!amEl || !pmEl) continue;
 
-            const transportValue = transportEl.value;
-            const isGreenCurrently = greenTransportValues.has(transportValue);
+            const amValue = amEl.value;
+            const pmValue = pmEl.value;
+            
+            // 0.5 points for morning green, 0.5 points for afternoon green
+            const amPoints = greenTransportValues.has(amValue) ? 0.5 : 0;
+            const pmPoints = greenTransportValues.has(pmValue) ? 0.5 : 0;
+            const totalDayPoints = amPoints + pmPoints;
 
             // Calculate actual date for this weekday (Mon=0...Fri=4)
             const dayDate = new Date(periodEndDate);
             dayDate.setDate(dayDate.getDate() - (5 - i));
             const dateStr = dayDate.toISOString().slice(0, 10); // 'YYYY-MM-DD'
 
-            const isAlreadyCredited = newCreditedDates.includes(dateStr);
+            // Storage for credited dates now needs to store what was credited (0.5 or 1.0)
+            // But to keep it simple, we'll store the object in creditedGreenItems if we want granularity
+            // For now, let's keep it simple: we store dateStr + session
+            const amKey = dateStr + '_AM';
+            const pmKey = dateStr + '_PM';
 
-            if (isGreenCurrently && !isAlreadyCredited) {
-                // Newly green: increment
-                newCount++;
-                newCreditedDates.push(dateStr);
+            if (amPoints > 0 && !newCreditedDates.includes(amKey)) {
+                newCount += amPoints;
+                newCreditedDates.push(amKey);
                 hasChanged = true;
-            } else if (!isGreenCurrently && isAlreadyCredited) {
-                // No longer green: decrement
-                newCount = Math.max(0, newCount - 1);
-                newCreditedDates = newCreditedDates.filter(d => d !== dateStr);
+            } else if (amPoints === 0 && newCreditedDates.includes(amKey)) {
+                newCount = Math.max(0, newCount - 0.5);
+                newCreditedDates = newCreditedDates.filter(d => d !== amKey);
+                hasChanged = true;
+            }
+
+            if (pmPoints > 0 && !newCreditedDates.includes(pmKey)) {
+                newCount += pmPoints;
+                newCreditedDates.push(pmKey);
+                hasChanged = true;
+            } else if (pmPoints === 0 && newCreditedDates.includes(pmKey)) {
+                newCount = Math.max(0, newCount - 0.5);
+                newCreditedDates = newCreditedDates.filter(d => d !== pmKey);
                 hasChanged = true;
             }
         }
