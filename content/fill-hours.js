@@ -37,9 +37,18 @@ async function fillInputs(holidays = []) {
   for (let i = 0; i < 5; i++) {
     const dayKey = DAYS[i];
 
+    const targetTotal = parseFloat(hoursValue.replace(',', '.'));
+    const currentTotal = getFilledHoursForDay(doc, i);
+    const remaining = targetTotal - currentTotal;
+
+    if (remaining <= 0) continue; // Skip if day is already full
+
+    // Use the remaining hours if the day is only partially filled
+    const effectiveHoursValue = remaining.toString().replace('.', ',');
+
     if (isDayHoliday(periodEndDate, holidayDates, i)) {
       const input = holidayRow?.querySelector(`input[name^="POL_TIME${i + 2}$"]`);
-      if (input) setIfEmpty(input, hoursValue);
+      if (input) setIfEmpty(input, effectiveHoursValue);
       continue;
     }
 
@@ -48,7 +57,7 @@ async function fillInputs(holidays = []) {
       const extraEntry = config.extraInputOptions.find(o => o.value === extraRowId);
       const row = resolveRowByLabel(doc, extraRowId, extraEntry?.label ?? extraRowId, extraEntry);
       const input = row?.querySelector(`input[name^="POL_TIME${i + 2}$"]`);
-      if (input) setIfEmpty(input, hoursValue);
+      if (input) setIfEmpty(input, effectiveHoursValue);
       continue;
     }
 
@@ -57,7 +66,7 @@ async function fillInputs(holidays = []) {
       const targetRow = await getOrCreateProjectRow(doc, projectCode);
       if (targetRow) {
         const ti = targetRow.querySelectorAll('input[name^="TIME"]')[i + 1];
-        if (ti) setIfEmpty(ti, hoursValue);
+        if (ti) setIfEmpty(ti, effectiveHoursValue);
       }
     }
   }
@@ -143,4 +152,36 @@ function claimProjectRow(row, projectCode) {
   const activityInput = row.querySelector('input[name^="ACTIVITY_CODE"]');
   if (codeInput) setAndDispatch(codeInput, projectCode);
   if (activityInput) setAndDispatch(activityInput, DEFAULT_ACTIVITY);
+}
+
+/**
+ * Sums all existing hour entries for a specific day index (0=Monday)
+ * across both the project and absence tables.
+ */
+function getFilledHoursForDay(doc, i) {
+  let total = 0;
+
+  // 1. Check Project Table rows (id starts with trEX_TIME_DTL)
+  const projectRows = doc.querySelectorAll('[id^="trEX_TIME_DTL"]');
+  projectRows.forEach(row => {
+    // Project inputs are usually indexed via TIME suffix in querySelectorAll
+    const input = row.querySelectorAll('input[name^="TIME"]')[i + 1];
+    if (input && input.value) {
+      const val = parseFloat(input.value.replace(',', '.'));
+      if (!isNaN(val)) total += val;
+    }
+  });
+
+  // 2. Check Absence/Internal Table rows (POL_TIME indexing)
+  const absenceRows = doc.querySelectorAll('[id^="trEX_TRC_MAP_VW"]');
+  absenceRows.forEach(row => {
+    // Absence table columns for Mon-Fri are indexed 2-6
+    const input = row.querySelector(`input[name^="POL_TIME${i + 2}$"]`);
+    if (input && input.value) {
+      const val = parseFloat(input.value.replace(',', '.'));
+      if (!isNaN(val)) total += val;
+    }
+  });
+
+  return total;
 }

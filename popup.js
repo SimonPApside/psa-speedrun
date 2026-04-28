@@ -5,6 +5,7 @@
 const TARGET_URL = 'https://psa-fs.ent.cgi.com/psc/fsprda/EMPLOYEE/ERP/c/';
 const URL_PSA = 'https://psa-fs.ent.cgi.com/psc/fsprda/EMPLOYEE/ERP/c/NUI_FRAMEWORK.PT_AGSTARTPAGE_NUI.GBL?CONTEXTIDPARAMS=TEMPLATE_ID%3aPTPPNAVCOL&scname=ADMN_UC_SELF_SERVICE_TIME&PanelCollapsible=Y&PTPPB_GROUPLET_ID=UCTI1000&CRefName=ADMN_NAVCOLL_1&AJAXTRANSFER=Y';
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+const DAY_BY_YEAR = 365;
 
 // Populated at startup from config.json (transportOptions with green:true)
 let greenTransportValues = new Set();
@@ -18,12 +19,12 @@ let DEFAULT_CONFIG = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Load JSON config files (options + default/empty configs)
-    const [configData, defaultConfig] = await Promise.all([
+    const [configData, defaultProfile] = await Promise.all([
         loadJson('resources/config.json'),
-        loadJson('resources/default_config.json')
+        loadJson('resources/default_profile.json')
     ]);
 
-    DEFAULT_CONFIG = defaultConfig;
+    DEFAULT_CONFIG = defaultProfile;
 
     if (configData) {
         populateSelectOptions(configData);
@@ -76,15 +77,85 @@ document.addEventListener('DOMContentLoaded', async () => {
     chrome.storage.sync.get({ bicycleCount: 0 }, (items) => {
         updateBikeCountDisplay(items.bicycleCount);
     });
-    document.getElementById('bikeResetBtn').addEventListener('click', () => {
-        if (!confirm('Remettre le compteur vélo à zéro ?')) return;
-        chrome.storage.sync.set({ bicycleCount: 0, creditedGreenDates: [] }, () => {
-            updateBikeCountDisplay(0);
-            flashInstruction('🚲 Compteur vélo remis à zéro', 'success');
+    
+    document.getElementById('bikeModifyBtn').addEventListener('click', (e) => {
+        const area = document.getElementById('bikeUpdateArea');
+        const input = document.getElementById('bikeManualInput');
+        const currentCount = document.getElementById('bikeCount').textContent;
+
+        area.style.display = 'flex';
+        e.target.style.display = 'none'; // Hide the 'Modifier' button
+        input.value = currentCount;
+        input.focus();
+    });
+
+    document.getElementById('bikeConfirmBtn').addEventListener('click', () => {
+        const input = document.getElementById('bikeManualInput');
+        const val = parseFloat(input.value);
+
+        if (isNaN(val) || val < 0 || val > DAY_BY_YEAR) {
+            flashInstruction(`⚠️ Entre 0 et ${DAY_BY_YEAR}`, 'warning');
+            return;
+        }
+
+        chrome.storage.sync.set({ bicycleCount: val }, () => {
+            updateBikeCountDisplay(val);
+            document.getElementById('bikeUpdateArea').style.display = 'none';
+            document.getElementById('bikeModifyBtn').style.display = 'inline-block'; // Show the button again
+            flashInstruction('🚲 Compteur mis à jour', 'success');
         });
     });
 
-    // 9. Check PSA page status
+    // 9. Project codes auto-fill
+    chrome.storage.local.get({ projectCodes: [] }, (items) => {
+        populateProjectDatalist(items.projectCodes);
+    });
+
+    document.getElementById('refreshProjectsBtn').addEventListener('click', async () => {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tab.url || !tab.url.includes(TARGET_URL)) {
+            flashInstruction("❌ Action seulement sur PSA", 'warning');
+            return;
+        }
+
+        flashInstruction("⏳ Recherche en cours...", "info");
+        chrome.tabs.sendMessage(tab.id, { type: 'SCRAPE_PROJECT_CODES', force: true }, (response) => {
+            if (response && response.success) {
+                chrome.storage.local.get({ projectCodes: [] }, (items) => {
+                    populateProjectDatalist(items.projectCodes);
+                    flashInstruction(`✓ ${items.projectCodes.length} codes trouvés`, "success");
+                });
+            } else {
+                flashInstruction("⚠️ Échec de la recherche", "warning");
+            }
+        });
+    });
+
+    // Open/Close afternoon localization select
+    document.querySelectorAll('.day-localization-morning button').forEach((el) => {
+        el.addEventListener('click', () => {
+            const parent = el.parentElement.parentElement;
+            parent.dataset.splitted = !(parent.dataset.splitted === 'true');
+        });
+    });
+
+    // Autofill afternoon select if selects are splitted
+    document.querySelectorAll('.day-localization-morning select').forEach((el) => {
+        el.addEventListener('click', () => {
+            const parent = el.parentElement.parentElement;
+            if (parent.dataset.splitted === 'false') {
+                parent.parentNode.querySelector('.day-localization-afternoon select').value = el.value;
+            }
+        });
+    });
+
+    // 10. Save reminder settings on any change in the UI
+    ['reminderTime', 'rem-day-1', 'rem-day-2', 'rem-day-3', 'rem-day-4', 'rem-day-5'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', () => getFormConfig());
+    });
+
+    // 11. Check PSA page status
     await checkExtensionStatus();
 });
 
@@ -92,7 +163,9 @@ function buildDefaultStorage() {
     return {
         currentConfig: DEFAULT_CONFIG,
         savedProfiles: { profile1: null, profile2: null },
-        activeProfileId: 'profile1'
+        activeProfileId: 'profile1',
+        reminderDays: [4],
+        reminderTime: '11:00'
     };
 }
 
@@ -301,9 +374,24 @@ function updateProfileSelectVisuals(savedProfiles) {
 
 function loadConfigIntoForm(config) {
     if (!config) return;
+
+    // Standard fields
     Object.entries(config).forEach(([key, value]) => {
         const el = document.getElementById(key);
         if (el) el.value = value;
+    });
+
+    // Reminder fields (loaded from global storage, not profile-specific)
+    chrome.storage.sync.get(['reminderDays', 'reminderTime'], (items) => {
+        // Load multiple days
+        if (items.reminderDays) {
+            [1, 2, 3, 4, 5].forEach(d => {
+                const el = document.getElementById(`rem-day-${d}`);
+                if (el) el.checked = items.reminderDays.includes(d);
+            });
+        }
+
+        if (items.reminderTime !== undefined) document.getElementById('reminderTime').value = items.reminderTime;
     });
 
     // Apply strikethrough on load
@@ -327,6 +415,17 @@ function getFormConfig() {
         const el = document.getElementById(key);
         if (el) config[key] = el.type === 'number' ? parseFloat(el.value) : el.value;
     });
+
+    // Save reminder settings globally
+    const reminderDays = [1, 2, 3, 4, 5]
+        .filter(d => document.getElementById(`rem-day-${d}`)?.checked)
+        .map(Number);
+
+    chrome.storage.sync.set({
+        reminderDays: reminderDays,
+        reminderTime: document.getElementById('reminderTime').value
+    });
+
     return config;
 }
 
@@ -335,7 +434,10 @@ function populateSelectOptions(config) {
     if (config.restTimeOptions) populateSelect('restTime', config.restTimeOptions);
 
     if (config.transportOptions) {
-        DAYS.forEach(day => populateSelect(day, config.transportOptions));
+        DAYS.forEach(day => {
+            populateSelect(day + 'AM', config.transportOptions);
+            populateSelect(day + 'PM', config.transportOptions);
+        });
     }
     if (config.extraInputOptions) {
         DAYS.forEach(day => populateSelect(day + 'Extra', config.extraInputOptions));
@@ -351,6 +453,18 @@ function populateSelect(selectId, options) {
         option.value = typeof opt === 'object' ? opt.value : opt;
         option.textContent = typeof opt === 'object' ? opt.label : opt;
         select.appendChild(option);
+    });
+}
+
+function populateProjectDatalist(codes) {
+    const datalist = document.getElementById('projectCodesList');
+    if (!datalist) return;
+    datalist.innerHTML = '';
+    const uniqueCodes = [...new Set(codes)].sort();
+    uniqueCodes.forEach(code => {
+        const option = document.createElement('option');
+        option.value = code;
+        datalist.appendChild(option);
     });
 }
 
@@ -393,21 +507,47 @@ function incrementBikeCountIfNeeded(periodEndDateStr) {
 
         for (let i = 0; i < 5; i++) {
             const dayKey = DAYS[i];
-            const transportEl = document.getElementById(dayKey);
-            if (!transportEl) continue;
+            const amEl = document.getElementById(dayKey + 'AM');
+            const pmEl = document.getElementById(dayKey + 'PM');
+            if (!amEl || !pmEl) continue;
 
-            const transportValue = transportEl.value;
-            if (greenTransportValues.has(transportValue)) {
-                // Calculate actual date for this weekday (Mon=0...Fri=4)
-                const dayDate = new Date(periodEndDate);
-                dayDate.setDate(dayDate.getDate() - (5 - i));
-                const dateStr = dayDate.toISOString().slice(0, 10); // 'YYYY-MM-DD'
+            const amValue = amEl.value;
+            const pmValue = pmEl.value;
+            
+            // 0.5 points for morning green, 0.5 points for afternoon green
+            const amPoints = greenTransportValues.has(amValue) ? 0.5 : 0;
+            const pmPoints = greenTransportValues.has(pmValue) ? 0.5 : 0;
+            const totalDayPoints = amPoints + pmPoints;
 
-                if (!newCreditedDates.includes(dateStr)) {
-                    newCount++;
-                    newCreditedDates.push(dateStr);
-                    hasChanged = true;
-                }
+            // Calculate actual date for this weekday (Mon=0...Fri=4)
+            const dayDate = new Date(periodEndDate);
+            dayDate.setDate(dayDate.getDate() - (5 - i));
+            const dateStr = dayDate.toISOString().slice(0, 10); // 'YYYY-MM-DD'
+
+            // Storage for credited dates now needs to store what was credited (0.5 or 1.0)
+            // But to keep it simple, we'll store the object in creditedGreenItems if we want granularity
+            // For now, let's keep it simple: we store dateStr + session
+            const amKey = dateStr + '_AM';
+            const pmKey = dateStr + '_PM';
+
+            if (amPoints > 0 && !newCreditedDates.includes(amKey)) {
+                newCount += amPoints;
+                newCreditedDates.push(amKey);
+                hasChanged = true;
+            } else if (amPoints === 0 && newCreditedDates.includes(amKey)) {
+                newCount = Math.max(0, newCount - 0.5);
+                newCreditedDates = newCreditedDates.filter(d => d !== amKey);
+                hasChanged = true;
+            }
+
+            if (pmPoints > 0 && !newCreditedDates.includes(pmKey)) {
+                newCount += pmPoints;
+                newCreditedDates.push(pmKey);
+                hasChanged = true;
+            } else if (pmPoints === 0 && newCreditedDates.includes(pmKey)) {
+                newCount = Math.max(0, newCount - 0.5);
+                newCreditedDates = newCreditedDates.filter(d => d !== pmKey);
+                hasChanged = true;
             }
         }
 
@@ -424,6 +564,7 @@ function updateBikeCountDisplay(count) {
     const el = document.getElementById('bikeCount');
     if (el) el.textContent = count;
 }
+
 
 // ============================================================
 // JSON LOADER

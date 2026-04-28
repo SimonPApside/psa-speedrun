@@ -70,10 +70,10 @@
 
         select {
             width: 100%;
-            padding: 8px 12px;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            font-size: 0.9rem;
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.85rem;
             font-weight: 500;
             color: var(--text-main);
             background: var(--white);
@@ -240,7 +240,7 @@
 
         .weekday-row {
             display: grid;
-            grid-template-columns: 80px 1fr 1fr 1fr;
+            grid-template-columns: 85px 150px 1fr 1fr;
             align-items: center;
             border-bottom: 1px solid var(--border);
         }
@@ -285,13 +285,9 @@
             color: var(--primary);
         }
 
-        .weekday-row select:first-of-type {
-            border-left: 1px solid var(--border);
-            border-right: 1px solid var(--border);
-        }
-
-        .weekday-row select:nth-of-type(2) {
-            border-left: 1px solid var(--border);
+        .weekday-row select,
+        .weekday-row input {
+            border-left: 1px solid var(--border) !important;
         }
 
         .weekday-row input[type="text"] {
@@ -479,6 +475,279 @@
         .psa-btn:hover {
             background: #ddccd1;
             border-color: #380615;
+        }        
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            padding: 2px;
+            cursor: pointer;
+            color: var(--secondary);
+            display: inline-flex;
+            align-items: center;
+            vertical-align: middle;
+            transition: color 0.2s, transform 0.2s;
+            margin-left: 4px;
+        }
+
+        .icon-btn:hover {
+            color: var(--primary);
+        }
+
+        /* Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e2e8f0;
+            transition: .3s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        input:checked+.slider {
+            background-color: var(--primary);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(20px);
+        }
+
+        /* Day Picker */
+        .day-picker {
+            display: flex;
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        .day-checkbox {
+            display: none;
+        }
+
+        .day-btn {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--white);
+            color: var(--text-muted);
+            user-select: none;
+        }
+
+        .day-checkbox:checked+.day-btn {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+        }
+
+        .day-btn:hover:not(.day-checkbox:checked + .day-btn) {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+
+        .day-localization {
+            border-left: 1px solid var(--border) !important;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .day-localization select {
+            border: none !important;
+        }
+
+        .day-localization button.icon-btn {
+            padding-top: 0;
+            transition: transform 0.2s;
+            width: 14px;
+            height: 14px;
+        }
+
+        .day-localization[data-splitted="true"] .day-localization-morning {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .day-localization[data-splitted="true"] button.icon-btn {
+            transform: rotate(90deg);
+        }
+
+        .day-localization[data-splitted="true"] .day-localization-afternoon {
+            display: flex;
+            align-items: center;
+        }
+
+        .day-localization-morning {
+            display: flex;
+            align-items: center;
+        }
+
+        .day-localization-morning span,
+        .day-localization-afternoon span {
+            display: none;
+            padding: 0 5px;
+        }
+
+        .day-localization[data-splitted="true"] span {
+            display: block;
+        }
+
+
+        .day-localization-afternoon {
+            display: none;
+        }
+
+        .day-localization-afternoon select {
+            padding-left: 24px;
+        }
+
+        /* Specific toggle adjustment */
+        .switch-wrapper {
+            display: flex;
+            align-items: center;
+            height: 34px;
+            /* Match standard input height */
+        }
+
+        .icon-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* Specific styling for the top profile selector to keep it prominent */
+        .profile-select-wrapper select {
+            padding: 8px 12px;
+            border-width: 2px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        /* Badges Section (stats + bike) */
+        .badges-section {
+            padding: 8px 12px;
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Hide badges when config is open */
+        .config-accordion.open~.badges-section,
+        .badges-section.hidden {
+            display: none;
+        }
+
+        .stat-chip {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+        }
+
+        .stat-chip-icon {
+            font-size: 1.2rem;
+        }
+
+        .stat-chip-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .stat-chip-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .stat-chip-value {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-chip-value span {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--secondary);
+        }
+
+        /* Collapsible reminder section (details/summary) */
+        .reminder-details {
+            margin-top: 4px;
+        }
+
+        .reminder-details summary {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--secondary);
+            margin: 16px 0 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            list-style: none;
+        }
+
+        .reminder-details summary::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .reminder-details summary::before {
+            content: "▸";
+            font-size: 0.8rem;
+            transition: transform 0.2s;
+        }
+
+        .reminder-details[open] summary::before {
+            transform: rotate(90deg);
+        }
+
+        .reminder-details .form-grid {
+            margin-top: 8px;
         }
     </style>
 </head>
@@ -518,7 +787,15 @@
                     <span class="count-unit">jour(s)</span>
                 </div>
             </div>
-            <button id="bikeResetBtn" class="bike-reset-btn" title="Remettre à zéro">Réinitialiser</button>
+            <div style="display: flex; gap: 4px; align-items: center;">
+                <button id="bikeModifyBtn" class="bike-reset-btn" title="Modifier le compteur manuel">Modifier</button>
+                <div id="bikeUpdateArea" style="display: none; align-items: center; gap: 4px;">
+                    <input type="number" id="bikeManualInput" min="1" max="365"
+                        style="width: 45px; padding: 3px; border: 1px solid #86efac; border-radius: 4px; font-size: 0.75rem;">
+                    <button id="bikeConfirmBtn" class="bike-reset-btn" style="padding: 3px 6px;">OK</button>
+                </div>
+                <button id="bikeResetBtn" class="bike-reset-btn" title="Remettre à zéro">Réinitialiser</button>
+            </div>
         </div>
 
         <!-- Configuration Accordion -->
@@ -549,55 +826,187 @@
                         <div class="weekday-row header">
                             <div class="day-label">Jour</div>
                             <div>Transport</div>
-                            <div>Code Projet</div>
-                            <div>Spécifique</div>
+                            <div>Code Projet
+                                <button id="refreshProjectsBtn" type="button" class="icon-btn"
+                                    title="Rechercher les codes projet sur PSA">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round">
+                                        <path
+                                            d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0118.8-4.3M22 12.5a10 10 0 01-18.8 4.3" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div style="border-left: 1px solid var(--border); padding-left: 6px;">Spécifique</div>
                         </div>
 
                         <!-- Monday -->
                         <div class="weekday-row">
                             <div class="day-label">Lundi</div>
-                            <select id="monday" name="monday" required title="Transport"></select>
+                            <div class="day-localization" data-splitted="false">
+                                <div class="day-localization-morning">
+                                    <button type="button" class="icon-btn"
+                                        title="Spécifier la localisation de l'après-midi">
+                                        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11.303 8l11.394 7.997L11.303 24z" />
+                                        </svg>
+                                    </button>
+                                    <select id="mondayAM" name="mondayAM" required title="Matin"></select>
+                                    <span>AM</span>
+                                </div>
+                                <div class="day-localization-afternoon">
+                                    <select id="mondayPM" name="mondayPM" required title="Après-midi"></select>
+                                    <span>PM</span>
+                                </div>
+                            </div>
                             <input type="text" id="mondayProject" name="mondayProject" placeholder="PROJ-001"
-                                title="Code Projet">
+                                title="Code Projet" list="projectCodesList">
                             <select id="mondayExtra" name="mondayExtra" title="Extra"></select>
                         </div>
 
                         <!-- Tuesday -->
                         <div class="weekday-row">
                             <div class="day-label">Mardi</div>
-                            <select id="tuesday" name="tuesday" required></select>
+                            <div class="day-localization" data-splitted="false">
+                                <div class="day-localization-morning">
+                                    <button type="button" class="icon-btn"
+                                        title="Spécifier la localisation de l'après-midi">
+                                        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11.303 8l11.394 7.997L11.303 24z" />
+                                        </svg>
+                                    </button>
+                                    <select id="tuesdayAM" name="tuesdayAM" required></select>
+                                    <span>AM</span>
+                                </div>
+                                <div class="day-localization-afternoon">
+                                    <select id="tuesdayPM" name="tuesdayPM" required></select>
+                                    <span>PM</span>
+                                </div>
+                            </div>
                             <input type="text" id="tuesdayProject" name="tuesdayProject" placeholder="PROJ-001"
-                                title="Code Projet">
+                                title="Code Projet" list="projectCodesList">
                             <select id="tuesdayExtra" name="tuesdayExtra"></select>
                         </div>
 
                         <!-- Wednesday -->
                         <div class="weekday-row">
                             <div class="day-label">Mercredi</div>
-                            <select id="wednesday" name="wednesday" required></select>
+                            <div class="day-localization" data-splitted="false">
+                                <div class="day-localization-morning">
+                                    <button type="button" class="icon-btn"
+                                        title="Spécifier la localisation de l'après-midi">
+                                        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11.303 8l11.394 7.997L11.303 24z" />
+                                        </svg>
+                                    </button>
+                                    <select id="wednesdayAM" name="wednesdayAM" required></select>
+                                    <span>AM</span>
+                                </div>
+                                <div class="day-localization-afternoon">
+                                    <select id="wednesdayPM" name="wednesdayPM" required></select>
+                                    <span>PM</span>
+                                </div>
+                            </div>
                             <input type="text" id="wednesdayProject" name="wednesdayProject" placeholder="PROJ-001"
-                                title="Code Projet">
+                                title="Code Projet" list="projectCodesList">
                             <select id="wednesdayExtra" name="wednesdayExtra"></select>
                         </div>
 
                         <!-- Thursday -->
                         <div class="weekday-row">
                             <div class="day-label">Jeudi</div>
-                            <select id="thursday" name="thursday" required></select>
+                            <div class="day-localization"  data-splitted="false">
+                                <div class="day-localization-morning">
+                                    <button type="button" class="icon-btn"
+                                        title="Spécifier la localisation de l'après-midi">
+                                        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11.303 8l11.394 7.997L11.303 24z" />
+                                        </svg>
+                                    </button>
+                                    <select id="thursdayAM" name="thursdayAM" required></select>
+                                    <span>AM</span>
+                                </div>
+                                <div class="day-localization-afternoon">
+                                    <select id="thursdayPM" name="thursdayPM" required></select>
+                                    <span>PM</span>
+                                </div>
+                            </div>
                             <input type="text" id="thursdayProject" name="thursdayProject" placeholder="PROJ-001"
-                                title="Code Projet">
+                                title="Code Projet" list="projectCodesList">
                             <select id="thursdayExtra" name="thursdayExtra"></select>
                         </div>
 
                         <!-- Friday -->
                         <div class="weekday-row">
                             <div class="day-label">Vendredi</div>
-                            <select id="friday" name="friday" required></select>
+                            <div class="day-localization"  data-splitted="false">
+                                <div class="day-localization-morning">
+                                    <button type="button" class="icon-btn"
+                                        title="Spécifier la localisation de l'après-midi">
+                                        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M11.303 8l11.394 7.997L11.303 24z" />
+                                        </svg>
+                                    </button>
+                                    <select id="fridayAM" name="fridayAM" required></select>
+                                    <span>AM</span>
+                                </div>
+                                <div class="day-localization-afternoon">
+                                    <select id="fridayPM" name="fridayPM" required></select>
+                                    <span>PM</span>
+                                </div>
+                            </div>
                             <input type="text" id="fridayProject" name="fridayProject" placeholder="PROJ-001"
-                                title="Code Projet">
+                                title="Code Projet" list="projectCodesList">
                             <select id="fridayExtra" name="fridayExtra"></select>
                         </div>
                     </div>
+
+                    <details class="reminder-details">
+                        <summary>Rappels Automatiques (tous les profils)</summary>
+                        <div class="form-grid">
+                            <div class="form-group" style="flex: 1.5;">
+                                <label>Jours de rappel</label>
+                                <div class="day-picker">
+                                    <input type="checkbox" id="rem-day-1" class="day-checkbox" value="1">
+                                    <label for="rem-day-1" class="day-btn">L</label>
+
+                                    <input type="checkbox" id="rem-day-2" class="day-checkbox" value="2">
+                                    <label for="rem-day-2" class="day-btn">M</label>
+
+                                    <input type="checkbox" id="rem-day-3" class="day-checkbox" value="3">
+                                    <label for="rem-day-3" class="day-btn">M</label>
+
+                                    <input type="checkbox" id="rem-day-4" class="day-checkbox" value="4">
+                                    <label for="rem-day-4" class="day-btn">J</label>
+
+                                    <input type="checkbox" id="rem-day-5" class="day-checkbox" value="5">
+                                    <label for="rem-day-5" class="day-btn">V</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="reminderTime">Heure</label>
+                                <select id="reminderTime" name="reminderTime">
+                                    <option value="08:00">08:00</option>
+                                    <option value="09:00">09:00</option>
+                                    <option value="10:00">10:00</option>
+                                    <option value="11:00">11:00</option>
+                                    <option value="12:00">12:00</option>
+                                    <option value="13:00">13:00</option>
+                                    <option value="14:00">14:00</option>
+                                    <option value="15:00">15:00</option>
+                                    <option value="16:00">16:00</option>
+                                    <option value="17:00">17:00</option>
+                                    <option value="18:00">18:00</option>
+                                    <option value="19:00">19:00</option>
+                                    <option value="20:00">20:00</option>
+                                </select>
+                            </div>
+                        </div>
+                    </details>
 
                     <div class="config-footer">
                         <button type="submit" class="btn-action btn-save">💾 Enregistrer</button>
@@ -607,6 +1016,7 @@
             </div>
         </div>
     </div>
+    <datalist id="projectCodesList"></datalist>
     <script src="popup.js"></script>
 </body>
 

@@ -12,11 +12,14 @@
 
   "permissions": [
     "activeTab",
+    "tabs",
     "scripting",
-    "storage"
+    "storage",
+    "notifications",
+    "alarms"
   ],
   "host_permissions": [
-    "https://psa-fs.ent.cgi.com/psc/fsprda/EMPLOYEE/ERP/c/*"
+    "<all_urls>"
   ],
   "background": {
     "service_worker": "background.js",
@@ -47,7 +50,7 @@
     {
       "resources": [
         "resources/config.json",
-        "resources/default_config.json",
+        "resources/default_profile.json",
         "resources/triggerClickFunction.js"
       ],
       "matches": [

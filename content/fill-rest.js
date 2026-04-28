@@ -5,7 +5,7 @@
  * Skips days that use an absence type flagged with `skipRestAndLocation`.
  * @param {Function} onDone - Called when filling is done and the form is saved.
  */
-function fillInputsRest(onDone) {
+function fillInputsRest(holidays = [], onDone) {
   const intervalId = setInterval(async () => {
     if (!document.getElementById('PT_AGSTARTPAGE_NUI')) return;
 
@@ -23,19 +23,25 @@ function fillInputsRest(onDone) {
 
     const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 
-    const skipDay = days.map(day => {
+    const { holidayDates, periodEndDate } = parseHolidays(doc, holidays);
+
+    const skipDay = days.map((day, i) => {
+      // 1. Skip if it's a detected bank holiday
+      if (isDayHoliday(periodEndDate, holidayDates, i)) return true;
+
+      // 2. Skip if it's an absence type flagged to skip (e.g., Vacation/RTT)
       const extraId = settings[day + 'Extra'];
       if (!extraId || extraId === 'NONE') return false;
       const option = config.extraInputOptions.find(o => o.value === extraId);
-      // Resolve the row by label (heals stale IDs in-memory) to confirm it's still the right row.
-      // We only need the resolution side-effect here; skipRestAndLocation comes from config.
-      resolveRowByLabel(doc, extraId, option?.label ?? extraId, option);
       return option?.skipRestAndLocation === true;
     });
 
     fillRestCheckboxes(doc, skipDay);
     fillRestTimeValues(doc, settings.restTime, skipDay);
-    fillLocationCodes(doc, days.map(day => settings[day]), skipDay);
+
+    const amCodes = days.map(day => settings[day + 'AM'] || settings[day] || 'NA');
+    const pmCodes = days.map(day => settings[day + 'PM'] || settings[day] || 'NA');
+    fillLocationCodes(doc, amCodes, pmCodes, skipDay);
 
     doc.querySelector('input[name="#ICSave"]')?.click();
 
@@ -67,12 +73,15 @@ function fillRestTimeValues(doc, restTime, skipDay) {
 }
 
 /** Fills transport/location codes (Mon–Fri = indices 1–5 in each 7-day group). */
-function fillLocationCodes(doc, dailyCodes, skipDay) {
+function fillLocationCodes(doc, amCodes, pmCodes, skipDay) {
   const inputs = Array.from(doc.querySelectorAll('[name^="UC_LOCATION_A"]'));
+  const sessionCodes = [amCodes, pmCodes];
+
   for (let i = 0; i < 2; i++) {
     const group = inputs.slice(i * 7, i * 7 + 7);
+    const codes = sessionCodes[i];
     for (let y = 1; y <= 5; y++) {
-      if (group[y]) setAndDispatch(group[y], skipDay[y - 1] ? 'NA' : dailyCodes[y - 1]);
+      if (group[y]) setAndDispatch(group[y], skipDay[y - 1] ? 'NA' : codes[y - 1]);
     }
   }
 }
