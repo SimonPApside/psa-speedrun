@@ -60,11 +60,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const dropZone = document.getElementById('dropZone');
     const importFile = document.getElementById('importFile');
 
-    dropZone.addEventListener('click', () => importFile.click());
+    dropZone.addEventListener('click', () => {
+        if (window.innerWidth < 650) {
+            chrome.tabs.create({ url: 'popup.html?mode=settings' });
+        } else {
+            importFile.click();
+        }
+    });
     importFile.addEventListener('change', handleFileSelect);
 
     dropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
+        if (window.innerWidth < 650) return; // Disable drag visual in popup
         dropZone.style.borderColor = 'var(--primary)';
         dropZone.style.background = '#f0f7ff';
     });
@@ -76,6 +83,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     dropZone.addEventListener('drop', (e) => {
         e.preventDefault();
+        if (window.innerWidth < 650) {
+            chrome.tabs.create({ url: 'popup.html?mode=settings' });
+            return;
+        }
         dropZone.style.borderColor = 'var(--border)';
         dropZone.style.background = 'transparent';
         const file = e.dataTransfer.files[0];
@@ -86,8 +97,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    document.getElementById('openTabBtn').addEventListener('click', () => {
-        chrome.tabs.create({ url: 'popup.html' });
+    const openTabBtn = document.getElementById('openTabBtn');
+    const popupSettingsNotice = document.getElementById('popupSettingsNotice');
+
+    if (window.innerWidth >= 650) {
+        openTabBtn.style.display = 'none';
+        if (popupSettingsNotice) popupSettingsNotice.style.display = 'none';
+    } else {
+        if (popupSettingsNotice) popupSettingsNotice.style.display = 'block';
+    }
+
+    openTabBtn.addEventListener('click', () => {
+        chrome.tabs.create({ url: 'popup.html?mode=settings' });
     });
 
     document.getElementById('cancelImportBtn').addEventListener('click', () => {
@@ -205,6 +226,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 11. Check PSA page status
     await checkExtensionStatus();
+
+    // 12. Handle URL parameters (e.g. open settings)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('mode') === 'settings') {
+        toggleSettingsAccordion();
+    }
 });
 
 function buildDefaultStorage() {

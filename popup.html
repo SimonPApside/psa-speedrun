@@ -796,11 +796,26 @@
                     </button>
                 </div>
                 <p style="font-size: 0.75rem; color: var(--text-muted); margin: 8px 0 12px 0;">
-                    Exportez ou glissez un fichier ici pour importer.
+                    Sauvegardez vos profils ou transférez-les vers un autre navigateur.
                 </p>
-                
-                <!-- Drag & Drop Zone -->
-                <div id="dropZone" style="border: 2px dashed var(--border); border-radius: 8px; padding: 20px; text-align: center; color: var(--secondary); font-size: 0.8rem; margin-bottom: 12px; transition: all 0.2s; cursor: pointer;">
+
+                <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+                    <div style="font-weight: 600; font-size: 0.75rem; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                        Instructions
+                    </div>
+                    <ul style="font-size: 0.7rem; color: var(--secondary); padding-left: 16px; line-height: 1.4;">
+                        <li><strong>Note :</strong> L'<strong>importation</strong> nécessite le <strong>mode plein écran</strong> pour fonctionner correctement.</li>
+                        <li><strong>Exporter :</strong> Télécharge un fichier <code>.json</code> de votre profil actif.</li>
+                        <li><strong>Importer :</strong> Glissez un fichier <code>.json</code> ou cliquez sur la zone ci-dessous.</li>
+                    </ul>
+                </div>
+
+                <div id="popupSettingsNotice" style="display: none; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px; margin-bottom: 12px; font-size: 0.75rem; color: #92400e; text-align: center;">
+                    ⚠️ Passez en <strong>plein écran</strong> pour <strong>importer</strong> des données.
+                </div>
+
+                <!-- Drag & Drop Zone -->                <div id="dropZone" style="border: 2px dashed var(--border); border-radius: 8px; padding: 20px; text-align: center; color: var(--secondary); font-size: 0.8rem; margin-bottom: 12px; transition: all 0.2s; cursor: pointer;">
                     📁 Glissez un fichier ici<br><span style="font-size: 0.7rem; opacity: 0.7;">(ou cliquez ici)</span>
                 </div>
 
