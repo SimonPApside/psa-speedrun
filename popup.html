@@ -33,19 +33,23 @@
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: var(--bg-gradient);
-            min-width: 400px;
+            width: 100%;
+            min-width: 0;
             color: var(--text-main);
             padding: 0;
-            overflow-y: scroll;
-            transition: min-width 0.3s ease;
+            overflow-x: hidden;
+            overflow-y: auto;
+            transition: none;
             /* Prevent scrollbar jitter on status show/hide */
         }
 
         body.expanded {
-            min-width: 600px;
+            min-width: 0;
         }
 
         .container {
+            width: 100%;
+            max-width: 100%;
             background: var(--white);
             border-radius: 0;
             box-shadow: none;
@@ -66,6 +70,7 @@
         .profile-select-wrapper {
             flex: 1;
             position: relative;
+            min-width: 0;
         }
 
         select {
@@ -194,6 +199,7 @@
 
         .form-grid {
             display: flex;
+            flex-wrap: wrap;
             gap: 12px;
             margin-bottom: 12px;
         }
@@ -207,7 +213,12 @@
             flex-direction: column;
             gap: 4px;
             min-width: 0;
+            width: 100%;
             /* Prevent flex blowouts */
+        }
+
+        .form-group-row {
+            flex-direction: row;
         }
 
         label {
@@ -240,7 +251,7 @@
 
         .weekday-row {
             display: grid;
-            grid-template-columns: 85px 150px 1fr 1fr;
+            grid-template-columns: 85px 115px 1fr;
             align-items: center;
             border-bottom: 1px solid var(--border);
         }
@@ -258,6 +269,10 @@
             padding: 4px 0;
         }
 
+        .weekday-row.header>div:nth-child(4) {
+            display: none;
+        }
+
         .day-label {
             padding-left: 12px;
             font-size: 0.8rem;
@@ -273,6 +288,7 @@
             color: var(--text-main);
             cursor: pointer;
             width: 100%;
+            min-width: 0;
         }
 
         .weekday-row select:hover {
@@ -311,6 +327,18 @@
         .weekday-row input[type="text"]:focus {
             background: #eff6ff;
             color: var(--primary);
+        }
+
+        .planning-field-hidden {
+            display: none !important;
+        }
+
+        .activity-select.activity-extra {
+            color: var(--secondary);
+        }
+
+        .activity-select.activity-placeholder {
+            color: var(--text-muted);
         }
 
         /* Status Messages */
@@ -392,6 +420,7 @@
         .bike-badge {
             display: flex;
             align-items: center;
+            flex-wrap: wrap;
             gap: 10px;
             padding: 8px 12px;
             background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
@@ -414,7 +443,7 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: #15803d;
-            white-space: nowrap;
+            white-space: normal;
         }
 
         .bike-badge-count {
@@ -726,6 +755,61 @@
         .reminder-details .form-grid {
             margin-top: 8px;
         }
+
+        @media (max-width: 430px) {
+            .controls-bar {
+                align-items: stretch;
+            }
+
+            .profile-select-wrapper {
+                flex: 1 1 100%;
+            }
+
+            .btn-fill {
+                flex: 1 1 auto;
+            }
+
+            .toggle-config-btn {
+                flex: 0 0 36px;
+            }
+
+            .config-content {
+                padding: 12px;
+            }
+
+            .form-grid {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .bike-badge {
+                align-items: flex-start;
+            }
+
+            .bike-badge>div:last-child {
+                width: 100%;
+                display: flex !important;
+                flex-wrap: wrap;
+            }
+
+            .bike-reset-btn {
+                flex: 1 1 120px;
+                text-align: center;
+            }
+
+            #bikeUpdateArea {
+                width: 100%;
+            }
+
+            #bikeManualInput {
+                width: 100% !important;
+                flex: 1 1 70px;
+            }
+
+            .config-footer {
+                flex-direction: column;
+            }
+        }
     </style>
 </head>
 
@@ -785,15 +869,17 @@
                             <label for="profileName">Nom du profil</label>
                             <input type="text" id="profileName" name="profileName" placeholder="Mon Profil">
                         </div>
-                        <div class="form-group">
-                            <label for="workHours">Heures / jour</label>
-                            <input type="number" id="workHours" name="workHours" min="1" max="24" step="0.1"
-                                placeholder="8" list="contractualHoursList" required>
-                            <datalist id="contractualHoursList"></datalist>
-                        </div>
-                        <div class="form-group">
-                            <label for="restTime">Pause Déj</label>
-                            <select id="restTime" name="restTime" required></select>
+                        <div class="form-group form-group-row" style="gap: 20px;">
+                            <div class="form-group">
+                                <label for="workHours">Heures / jour</label>
+                                <input type="number" id="workHours" name="workHours" min="1" max="24" step="0.1"
+                                    placeholder="8" list="contractualHoursList" required>
+                                <datalist id="contractualHoursList"></datalist>
+                            </div>
+                            <div class="form-group">
+                                <label for="restTime">Pause Déj</label>
+                                <select id="restTime" name="restTime" required></select>
+                            </div>
                         </div>
                     </div>
 
@@ -803,7 +889,7 @@
                         <div class="weekday-row header">
                             <div class="day-label">Jour</div>
                             <div>Transport</div>
-                            <div>Code Projet
+                            <div>📁 Projet / ✨ Extra
                                 <button id="refreshProjectsBtn" type="button" class="icon-btn"
                                     title="Rechercher les codes projet sur PSA">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -836,9 +922,11 @@
                                     <span>PM</span>
                                 </div>
                             </div>
-                            <input type="text" id="mondayProject" name="mondayProject" placeholder="PROJ-001"
-                                title="Code Projet" list="projectCodesList">
-                            <select id="mondayExtra" name="mondayExtra" title="Extra"></select>
+                            <select id="mondayActivity" class="activity-select" title="Activite"></select>
+                            <input type="text" id="mondayProject" name="mondayProject" class="planning-field-hidden"
+                                placeholder="PROJ-001" title="Code Projet" list="projectCodesList">
+                            <select id="mondayExtra" name="mondayExtra" class="planning-field-hidden"
+                                title="Extra"></select>
                         </div>
 
                         <!-- Tuesday -->
@@ -861,9 +949,10 @@
                                     <span>PM</span>
                                 </div>
                             </div>
-                            <input type="text" id="tuesdayProject" name="tuesdayProject" placeholder="PROJ-001"
-                                title="Code Projet" list="projectCodesList">
-                            <select id="tuesdayExtra" name="tuesdayExtra"></select>
+                            <select id="tuesdayActivity" class="activity-select" title="Activite"></select>
+                            <input type="text" id="tuesdayProject" name="tuesdayProject" class="planning-field-hidden"
+                                placeholder="PROJ-001" title="Code Projet" list="projectCodesList">
+                            <select id="tuesdayExtra" name="tuesdayExtra" class="planning-field-hidden"></select>
                         </div>
 
                         <!-- Wednesday -->
@@ -886,15 +975,17 @@
                                     <span>PM</span>
                                 </div>
                             </div>
-                            <input type="text" id="wednesdayProject" name="wednesdayProject" placeholder="PROJ-001"
-                                title="Code Projet" list="projectCodesList">
-                            <select id="wednesdayExtra" name="wednesdayExtra"></select>
+                            <select id="wednesdayActivity" class="activity-select" title="Activite"></select>
+                            <input type="text" id="wednesdayProject" name="wednesdayProject"
+                                class="planning-field-hidden" placeholder="PROJ-001" title="Code Projet"
+                                list="projectCodesList">
+                            <select id="wednesdayExtra" name="wednesdayExtra" class="planning-field-hidden"></select>
                         </div>
 
                         <!-- Thursday -->
                         <div class="weekday-row">
                             <div class="day-label">Jeudi</div>
-                            <div class="day-localization"  data-splitted="false">
+                            <div class="day-localization" data-splitted="false">
                                 <div class="day-localization-morning">
                                     <button type="button" class="icon-btn"
                                         title="Spécifier la localisation de l'après-midi">
@@ -911,15 +1002,16 @@
                                     <span>PM</span>
                                 </div>
                             </div>
-                            <input type="text" id="thursdayProject" name="thursdayProject" placeholder="PROJ-001"
-                                title="Code Projet" list="projectCodesList">
-                            <select id="thursdayExtra" name="thursdayExtra"></select>
+                            <select id="thursdayActivity" class="activity-select" title="Activite"></select>
+                            <input type="text" id="thursdayProject" name="thursdayProject" class="planning-field-hidden"
+                                placeholder="PROJ-001" title="Code Projet" list="projectCodesList">
+                            <select id="thursdayExtra" name="thursdayExtra" class="planning-field-hidden"></select>
                         </div>
 
                         <!-- Friday -->
                         <div class="weekday-row">
                             <div class="day-label">Vendredi</div>
-                            <div class="day-localization"  data-splitted="false">
+                            <div class="day-localization" data-splitted="false">
                                 <div class="day-localization-morning">
                                     <button type="button" class="icon-btn"
                                         title="Spécifier la localisation de l'après-midi">
@@ -936,58 +1028,65 @@
                                     <span>PM</span>
                                 </div>
                             </div>
-                            <input type="text" id="fridayProject" name="fridayProject" placeholder="PROJ-001"
-                                title="Code Projet" list="projectCodesList">
-                            <select id="fridayExtra" name="fridayExtra"></select>
+                            <select id="fridayActivity" class="activity-select" title="Activite"></select>
+                            <input type="text" id="fridayProject" name="fridayProject" class="planning-field-hidden"
+                                placeholder="PROJ-001" title="Code Projet" list="projectCodesList">
+                            <select id="fridayExtra" name="fridayExtra" class="planning-field-hidden"></select>
                         </div>
                     </div>
 
                     <details class="reminder-details">
                         <summary>Rappels Automatiques (tous les profils)</summary>
                         <div class="form-grid">
-                            <div class="form-group" style="flex: 1.5;">
-                                <label>Jours de rappel</label>
-                                <div class="day-picker">
-                                    <input type="checkbox" id="rem-day-1" class="day-checkbox" value="1">
-                                    <label for="rem-day-1" class="day-btn">L</label>
+                            <div class="form-group form-group-row" style="flex: 1.5; gap: 50px;">
+                                <div class="form-group">
+                                    <label>Jours de rappel</label>
+                                    <div class="form-group form-group-row">
+                                        <div class="day-picker">
+                                            <input type="checkbox" id="rem-day-1" class="day-checkbox" value="1">
+                                            <label for="rem-day-1" class="day-btn">L</label>
 
-                                    <input type="checkbox" id="rem-day-2" class="day-checkbox" value="2">
-                                    <label for="rem-day-2" class="day-btn">M</label>
+                                            <input type="checkbox" id="rem-day-2" class="day-checkbox" value="2">
+                                            <label for="rem-day-2" class="day-btn">M</label>
 
-                                    <input type="checkbox" id="rem-day-3" class="day-checkbox" value="3">
-                                    <label for="rem-day-3" class="day-btn">M</label>
+                                            <input type="checkbox" id="rem-day-3" class="day-checkbox" value="3">
+                                            <label for="rem-day-3" class="day-btn">M</label>
 
-                                    <input type="checkbox" id="rem-day-4" class="day-checkbox" value="4">
-                                    <label for="rem-day-4" class="day-btn">J</label>
+                                            <input type="checkbox" id="rem-day-4" class="day-checkbox" value="4">
+                                            <label for="rem-day-4" class="day-btn">J</label>
 
-                                    <input type="checkbox" id="rem-day-5" class="day-checkbox" value="5">
-                                    <label for="rem-day-5" class="day-btn">V</label>
+                                            <input type="checkbox" id="rem-day-5" class="day-checkbox" value="5">
+                                            <label for="rem-day-5" class="day-btn">V</label>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="reminderTime">Heure</label>
-                                <select id="reminderTime" name="reminderTime">
-                                    <option value="08:00">08:00</option>
-                                    <option value="09:00">09:00</option>
-                                    <option value="10:00">10:00</option>
-                                    <option value="11:00">11:00</option>
-                                    <option value="12:00">12:00</option>
-                                    <option value="13:00">13:00</option>
-                                    <option value="14:00">14:00</option>
-                                    <option value="15:00">15:00</option>
-                                    <option value="16:00">16:00</option>
-                                    <option value="17:00">17:00</option>
-                                    <option value="18:00">18:00</option>
-                                    <option value="19:00">19:00</option>
-                                    <option value="20:00">20:00</option>
-                                </select>
+                                <div class="form-group">
+                                    <label for="reminderTime">À partir de :</label>
+                                    <select id="reminderTime" name="reminderTime">
+                                        <option value="08:00">08:00</option>
+                                        <option value="09:00">09:00</option>
+                                        <option value="10:00">10:00</option>
+                                        <option value="11:00">11:00</option>
+                                        <option value="12:00">12:00</option>
+                                        <option value="13:00">13:00</option>
+                                        <option value="14:00">14:00</option>
+                                        <option value="15:00">15:00</option>
+                                        <option value="16:00">16:00</option>
+                                        <option value="17:00">17:00</option>
+                                        <option value="18:00">18:00</option>
+                                        <option value="19:00">19:00</option>
+                                        <option value="20:00">20:00</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </details>
 
                     <div class="config-footer">
-                        <button type="submit" class="btn-action btn-save">💾 Enregistrer</button>
-                        <button type="button" id="resetBtn" class="btn-action btn-reset">🔄 Réinitialiser</button>
+                        <div class="form-group form-group-row">
+                            <button type="submit" class="btn-action btn-save">💾 Enregistrer</button>
+                            <button type="button" id="resetBtn" class="btn-action btn-reset">🔄 Réinitialiser</button>
+                        </div>
                     </div>
                 </form>
             </div>

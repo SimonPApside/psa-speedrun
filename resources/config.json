@@ -5,10 +5,6 @@
     },
     "extraInputOptions": [
         {
-            "value": "NONE",
-            "label": ""
-        },
-        {
             "value": "trEX_TRC_MAP_VW$0_row19",
             "label": "Avant-vente"
         },

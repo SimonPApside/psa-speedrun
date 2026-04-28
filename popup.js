@@ -11,6 +11,13 @@ let greenTransportValues = new Set();
 
 // Loaded from JSON at startup
 let DEFAULT_CONFIG = null;
+let extraInputOptions = [];
+let projectCodesCache = [];
+
+
+// Connect a port to the background worker.
+// When the side panel closes, the port disconnects and the background updates the FAB.
+chrome.runtime.connect({ name: 'sidepanel' });
 
 // ============================================================
 // INIT
@@ -70,6 +77,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById(`${day}Extra`).addEventListener('change', (e) => {
             updateStrikethrough(day, e.target.value);
         });
+        document.getElementById(`${day}Activity`).addEventListener('change', (e) => {
+            syncStoredFieldsFromActivity(day, e.target.value);
+        });
     });
 
     // 8. Bicycle badge: load count & register reset
@@ -107,7 +117,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 9. Project codes auto-fill
     chrome.storage.local.get({ projectCodes: [] }, (items) => {
+        projectCodesCache = items.projectCodes;
         populateProjectDatalist(items.projectCodes);
+        populateActivitySelects();
     });
 
     document.getElementById('refreshProjectsBtn').addEventListener('click', async () => {
@@ -121,7 +133,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         chrome.tabs.sendMessage(tab.id, { type: 'SCRAPE_PROJECT_CODES', force: true }, (response) => {
             if (response && response.success) {
                 chrome.storage.local.get({ projectCodes: [] }, (items) => {
+                    projectCodesCache = items.projectCodes;
                     populateProjectDatalist(items.projectCodes);
+                    populateActivitySelects();
                     flashInstruction(`✓ ${items.projectCodes.length} codes trouvés`, "success");
                 });
             } else {
@@ -395,19 +409,27 @@ function loadConfigIntoForm(config) {
     // Apply strikethrough on load
     DAYS.forEach(day => {
         const extraVal = config[`${day}Extra`];
+        syncActivitySelectFromStored(day);
         updateStrikethrough(day, extraVal);
     });
 }
 
 function updateStrikethrough(day, extraValue) {
-    const projectInput = document.getElementById(`${day}Project`);
-    if (projectInput) {
-        projectInput.classList.toggle('strikethrough', extraValue && extraValue !== 'NONE');
+    const activitySelect = document.getElementById(`${day}Activity`);
+    if (activitySelect) {
+        const hasExtra = extraValue && extraValue !== 'NONE';
+        activitySelect.classList.toggle('activity-extra', hasExtra);
+        activitySelect.classList.toggle('activity-placeholder', !activitySelect.value);
     }
 }
 
 function getFormConfig() {
     const config = {};
+    DAYS.forEach(day => {
+        const activitySelect = document.getElementById(`${day}Activity`);
+        if (activitySelect) syncStoredFieldsFromActivity(day, activitySelect.value);
+    });
+
     const fields = [...Object.keys(DEFAULT_CONFIG), 'profileName'];
     fields.forEach(key => {
         const el = document.getElementById(key);
@@ -438,7 +460,9 @@ function populateSelectOptions(config) {
         });
     }
     if (config.extraInputOptions) {
+        extraInputOptions = config.extraInputOptions;
         DAYS.forEach(day => populateSelect(day + 'Extra', config.extraInputOptions));
+        populateActivitySelects();
     }
 }
 
@@ -464,6 +488,88 @@ function populateProjectDatalist(codes) {
         option.value = code;
         datalist.appendChild(option);
     });
+}
+
+function populateActivitySelects() {
+    DAYS.forEach(day => {
+        const select = document.getElementById(`${day}Activity`);
+        const currentProject = document.getElementById(`${day}Project`)?.value;
+        if (!select) return;
+
+        select.innerHTML = '';
+        select.dataset.placeholder = 'Choisir une activite';
+        select.title = select.dataset.placeholder;
+
+        const projectGroup = document.createElement('optgroup');
+        projectGroup.label = '📁 Projets';
+
+        const projectCodes = [...new Set([
+            ...projectCodesCache,
+            ...(currentProject ? [currentProject] : [])
+        ])].sort();
+
+        projectCodes.forEach(code => {
+            const option = document.createElement('option');
+            option.value = `project:${code}`;
+            option.textContent = `${code}`;
+            option.dataset.kind = 'project';
+            projectGroup.appendChild(option);
+        });
+
+        const extraGroup = document.createElement('optgroup');
+        extraGroup.label = '✨ Absences et autres';
+
+        extraInputOptions.forEach(opt => {
+            const option = document.createElement('option');
+            option.value = `extra:${opt.value}`;
+            option.textContent = opt.label ? `${opt.label}` : 'Aucune';
+            option.dataset.kind = 'extra';
+            extraGroup.appendChild(option);
+        });
+
+        select.appendChild(projectGroup);
+        select.appendChild(extraGroup);
+
+        syncActivitySelectFromStored(day);
+    });
+}
+
+function syncActivitySelectFromStored(day) {
+    const select = document.getElementById(`${day}Activity`);
+    const projectInput = document.getElementById(`${day}Project`);
+    const extraSelect = document.getElementById(`${day}Extra`);
+    if (!select || !projectInput || !extraSelect) return;
+
+    const value = projectInput.value
+        ? `project:${projectInput.value}`
+        : `extra:${extraSelect.value || 'NONE'}`;
+
+    const hasMatchingOption = Array.from(select.options).some(option => option.value === value);
+    if (hasMatchingOption) {
+        select.value = value;
+    } else {
+        select.selectedIndex = -1;
+    }
+    updateStrikethrough(day, extraSelect.value);
+}
+
+function syncStoredFieldsFromActivity(day, activityValue) {
+    const projectInput = document.getElementById(`${day}Project`);
+    const extraSelect = document.getElementById(`${day}Extra`);
+    if (!projectInput || !extraSelect) return;
+
+    if (!activityValue) {
+        projectInput.value = '';
+        extraSelect.value = 'NONE';
+    } else if (activityValue.startsWith('project:')) {
+        projectInput.value = activityValue.slice('project:'.length);
+        extraSelect.value = 'NONE';
+    } else if (activityValue.startsWith('extra:')) {
+        projectInput.value = '';
+        extraSelect.value = activityValue.slice('extra:'.length);
+    }
+
+    updateStrikethrough(day, extraSelect.value);
 }
 
 function populateDatalist(datalistId, items) {

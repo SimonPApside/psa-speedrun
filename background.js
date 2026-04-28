@@ -14,6 +14,11 @@ const contentScriptStatus = {};
 chrome.runtime.onInstalled.addListener(() => {
   // Create alarm to check every hour
   chrome.alarms.create('checkReminder', { periodInMinutes: 60 });
+  enableSidePanelAction();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  enableSidePanelAction();
 });
 
 // ============================================================
@@ -38,6 +43,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.message === 'CREATE_NOTIFICATION') {
     createNotification(null, request.data);
     sendResponse({ success: true });
+  } else if (request.type === 'FAB_TOGGLE') {
+    console.log(request);
+    const windowId = sender.tab?.windowId;
+
+    if (!windowId) {
+      sendResponse({ success: false });
+      return true;
+    }
+
+    let promise;
+    if(request.open) {
+      promise = chrome.sidePanel.open({ windowId });
+    } else {
+      promise = chrome.sidePanel.close({ windowId });
+    }
+    promise.then(() => {
+        setPanelState(request.open);
+        sendResponse({ success: true });
+      })
+      .catch(() => sendResponse({ success: false }));
+
+    return true;
   }
 
   return true;
@@ -59,6 +86,37 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
     delete contentScriptStatus[tabId];
   }
 });
+
+// ============================================================
+// PANEL LIFECYCLE
+// ============================================================
+
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name !== 'sidepanel') return;
+ 
+  setPanelState(true);
+ 
+  port.onDisconnect.addListener(() => {
+    setPanelState(false);
+  });
+});
+ 
+function enableSidePanelAction() {
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+}
+
+function setPanelState(open) {
+  chrome.storage.local.set({ panelOpen: open });
+ 
+  chrome.tabs.query({}, (tabs) => {
+    for (const tab of tabs) {
+      chrome.tabs.sendMessage(tab.id, { type: 'PANEL_STATE_CHANGED', open })
+        .catch(() => {});
+    }
+  });
+}
+ 
+
 
 // ============================================================
 // PUBLIC HOLIDAYS
