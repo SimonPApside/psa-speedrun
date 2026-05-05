@@ -5,6 +5,9 @@
 const TARGET_URL = 'https://psa-fs.ent.cgi.com/psc/fsprda/EMPLOYEE/ERP/c/';
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 const DAY_BY_YEAR = 365;
+const GITHUB_REPOSITORY = 'SimonPApside/psa-speedrun';
+const GITHUB_MAIN_MANIFEST_API_URL = `https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/manifest.json?ref=main`;
+const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 // Populated at startup from config.json (transportOptions with green:true)
 let greenTransportValues = new Set();
@@ -156,6 +159,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 11. Check PSA page status
     await checkExtensionStatus();
+
+    // 12. Check if a newer version is available on the GitHub main branch
+    checkForAvailableUpdate();
 });
 
 function buildDefaultStorage() {
@@ -316,6 +322,111 @@ function flashInstruction(msg, type) {
         el.textContent = prevText;
         el.className = prevClass;
     }, 1500);
+}
+
+// ============================================================
+// VERSION CHECK
+// ============================================================
+
+async function checkForAvailableUpdate() {
+    try {
+        const latestManifest = await getLatestManifest();
+        if (!latestManifest?.version) return;
+
+        const currentVersion = chrome.runtime.getManifest().version;
+        const latestVersion = normalizeVersion(latestManifest.version);
+
+        if (isVersionNewer(latestVersion, currentVersion)) {
+            showUpdateBanner(currentVersion, latestVersion);
+        }
+    } catch (err) {
+        console.info('Update check skipped:', err);
+    }
+}
+
+function getLatestManifest() {
+    return new Promise((resolve, reject) => {
+        chrome.storage.local.get({ latestManifestCache: null }, async ({ latestManifestCache }) => {
+            const now = Date.now();
+
+            if (
+                latestManifestCache?.checkedAt &&
+                latestManifestCache?.manifest &&
+                now - latestManifestCache.checkedAt < UPDATE_CHECK_INTERVAL_MS
+            ) {
+                resolve(latestManifestCache.manifest);
+                return;
+            }
+
+            try {
+                const response = await fetch(GITHUB_MAIN_MANIFEST_API_URL, {
+                    headers: { Accept: 'application/vnd.github+json' }
+                });
+
+                if (!response.ok) throw new Error(`GitHub API returned ${response.status}`);
+
+                const file = await response.json();
+                const manifest = JSON.parse(decodeBase64(file.content || ''));
+                chrome.storage.local.set({
+                    latestManifestCache: {
+                        checkedAt: now,
+                        manifest
+                    }
+                });
+                resolve(manifest);
+            } catch (err) {
+                reject(err);
+            }
+        });
+    });
+}
+
+function showUpdateBanner(currentVersion, latestVersion) {
+    const banner = document.getElementById('updateBanner');
+    const text = document.getElementById('updateBannerText');
+    const link = document.getElementById('updateBannerLink');
+
+    if (!banner || !text || !link) return;
+
+    text.textContent = `Nouvelle version disponible: ${latestVersion} (installée: ${currentVersion})`;
+    link.href = `https://github.com/${GITHUB_REPOSITORY}`;
+    banner.hidden = false;
+    banner.classList.add('show');
+}
+
+function decodeBase64(value) {
+    const cleanValue = String(value).replace(/\s/g, '');
+    return decodeURIComponent(
+        Array.from(atob(cleanValue), char => `%${char.charCodeAt(0).toString(16).padStart(2, '0')}`).join('')
+    );
+}
+
+function normalizeVersion(version) {
+    return String(version || '')
+        .trim()
+        .replace(/^v/i, '')
+        .split('-')[0];
+}
+
+function isVersionNewer(candidate, current) {
+    const candidateParts = normalizeVersion(candidate).split('.').map(toVersionNumber);
+    const currentParts = normalizeVersion(current).split('.').map(toVersionNumber);
+    const maxLength = Math.max(candidateParts.length, currentParts.length);
+
+    for (let i = 0; i < maxLength; i++) {
+        const candidatePart = candidateParts[i] || 0;
+        const currentPart = currentParts[i] || 0;
+
+        if (candidatePart > currentPart) return true;
+        if (candidatePart < currentPart) return false;
+    }
+
+    return false;
+}
+
+function toVersionNumber(part) {
+    const number = Number.parseInt(part, 10);
+    return Number.isNaN(number) ? 0 : number;
 }
 
 // ============================================================
