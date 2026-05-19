@@ -52,8 +52,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         setProfile(profileId, items);
     });
 
-    // 3. Accordion toggle
-    document.getElementById('toggleConfigBtn').addEventListener('click', toggleAccordion);
+    // 3. Accordion toggle (Removed button, always open)
+    // document.getElementById('toggleConfigBtn').addEventListener('click', toggleAccordion);
 
     // 4. Profile selector
     document.getElementById('activeProfileSelect').addEventListener('change', (e) => {

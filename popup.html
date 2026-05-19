@@ -101,7 +101,13 @@
             transform: translateY(-50%);
             pointer-events: none;
             color: var(--secondary);
+            font-size: 1.5rem;
         }
+        
+        .profile-select-wrapper:open {
+            transform: rotate(180deg);
+        }
+
 
         .btn-fill {
             background: var(--header-gradient);
@@ -155,18 +161,9 @@
             transform: rotate(180deg);
         }
 
-        /* Config Section (Accordion) */
+        /* Config Section (Always Visible) */
         .config-accordion {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out;
             background: #fafafa;
-        }
-
-        .config-accordion.open {
-            max-height: 1000px;
-            /* Large enough to fit content */
-            transition: max-height 0.5s ease-in;
             border-top: 1px solid var(--border);
         }
 
@@ -716,12 +713,12 @@
             color: var(--secondary);
         }
 
-        /* Collapsible reminder section (details/summary) */
+        /* Static reminder section */
         .reminder-details {
             margin-top: 4px;
         }
 
-        .reminder-details summary {
+        .reminder-details .reminder-title {
             font-size: 0.75rem;
             font-weight: 700;
             text-transform: uppercase;
@@ -731,25 +728,13 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            cursor: pointer;
-            list-style: none;
         }
 
-        .reminder-details summary::after {
+        .reminder-details .reminder-title::after {
             content: "";
             flex: 1;
             height: 1px;
             background: var(--border);
-        }
-
-        .reminder-details summary::before {
-            content: "▸";
-            font-size: 0.8rem;
-            transition: transform 0.2s;
-        }
-
-        .reminder-details[open] summary::before {
-            transform: rotate(90deg);
         }
 
         .reminder-details .form-grid {
@@ -818,26 +803,6 @@
         <!-- Dynamic Status (Top) -->
         <div id="instructions" class="status-bar show info">Chargement...</div>
 
-        <!-- Compact Control Bar -->
-        <div class="controls-bar">
-            <div class="profile-select-wrapper">
-                <select id="activeProfileSelect" title="Choisir un profil">
-                    <option value="profile1">👤 Profil 1</option>
-                    <option value="profile2">👤 Profil 2</option>
-                    <option value="custom">📝 Personnalisé</option>
-                </select>
-            </div>
-
-            <button id="fillFormButton" class="btn-fill" title="Remplir le formulaire PSA">Remplir</button>
-
-            <button id="toggleConfigBtn" class="toggle-config-btn" title="Paramètres">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-            </button>
-        </div>
-
         <!-- Bicycle Badge -->
         <div class="bike-badge">
             <div class="bike-badge-icon">🚲</div>
@@ -857,6 +822,19 @@
                 </div>
                 <button id="bikeResetBtn" class="bike-reset-btn" title="Remettre à zéro">Réinitialiser</button>
             </div>
+        </div>
+
+        <!-- Compact Control Bar -->
+        <div class="controls-bar">
+            <div class="profile-select-wrapper">
+                <select id="activeProfileSelect" title="Choisir un profil">
+                    <option value="profile1">👤 Profil 1</option>
+                    <option value="profile2">👤 Profil 2</option>
+                    <option value="custom">📝 Personnalisé</option>
+                </select>
+            </div>
+
+            <button id="fillFormButton" class="btn-fill" title="Remplir le formulaire PSA">Remplir</button>
         </div>
 
         <!-- Configuration Accordion -->
@@ -1035,8 +1013,8 @@
                         </div>
                     </div>
 
-                    <details class="reminder-details">
-                        <summary>Rappels Automatiques (tous les profils)</summary>
+                    <div class="reminder-details">
+                        <div class="reminder-title">Rappels Automatiques (tous les profils)</div>
                         <div class="form-grid">
                             <div class="form-group form-group-row" style="flex: 1.5; gap: 50px;">
                                 <div class="form-group">
@@ -1080,7 +1058,7 @@
                                 </div>
                             </div>
                         </div>
-                    </details>
+                    </div>
 
                     <div class="config-footer">
                         <div class="form-group form-group-row">
