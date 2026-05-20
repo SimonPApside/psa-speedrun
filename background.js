@@ -33,10 +33,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     chrome.action.setBadgeText({ text: '✓', tabId });
     chrome.action.setBadgeBackgroundColor({ color: '#4CAF50', tabId });
+    
+    // Notify the FAB and other content scripts that tables are ready
+    chrome.tabs.sendMessage(tabId, { type: 'TABLES_READY' });
+    
+    sendResponse({ success: true });
+
+  } else if (request.type === 'TABLES_NOT_DETECTED') {
+    delete contentScriptStatus[tabId];
+    chrome.action.setBadgeText({ text: '', tabId });
+    chrome.tabs.sendMessage(tabId, { type: 'TABLES_NOT_READY' });
     sendResponse({ success: true });
 
   } else if (request.type === 'GET_STATUS') {
-    sendResponse({ status: contentScriptStatus[request.tabId] || { loaded: false } });
+    const targetTabId = request.tabId || tabId;
+    sendResponse({ status: contentScriptStatus[targetTabId] || { loaded: false } });
+
+  } else if (request.type === 'FILL_FORM_FROM_FAB') {
+    // Forward the fill request from FAB to the main content script
+    chrome.tabs.sendMessage(tabId, { type: 'FILL_FORM' });
+    sendResponse({ success: true });
 
   } else if (request.message === 'GET_PUBLIC_HOLIDAYS') {
     getJoursFeriesOfWeek(new Date(request.data)).then(result => sendResponse(result));
@@ -79,10 +95,12 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   delete contentScriptStatus[tabId];
 });
 
-// Clear badge when navigating away from the target page
+// Clear badge and status when navigating
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-  if (changeInfo.url && !changeInfo.url.includes(TARGET_URL)) {
-    chrome.action.setBadgeText({ text: '', tabId });
+  if (changeInfo.url) {
+    if (!changeInfo.url.includes(TARGET_URL)) {
+      chrome.action.setBadgeText({ text: '', tabId });
+    }
     delete contentScriptStatus[tabId];
   }
 });

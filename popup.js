@@ -56,30 +56,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     // document.getElementById('toggleConfigBtn').addEventListener('click', toggleAccordion);
 
     // 4. Profile selector
-    document.getElementById('activeProfileSelect').addEventListener('change', (e) => {
-        chrome.storage.sync.get(buildDefaultStorage(), (items) => {
-            setProfile(e.target.value, items);
+    const profileSelect = document.getElementById('activeProfileSelect');
+    if (profileSelect) {
+        profileSelect.addEventListener('change', (e) => {
+            chrome.storage.sync.get(buildDefaultStorage(), (items) => {
+                setProfile(e.target.value, items);
+            });
         });
-    });
+    }
 
     // 5. Form save
-    document.getElementById('configForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        saveCurrentConfig();
-    });
+    const configForm = document.getElementById('configForm');
+    if (configForm) {
+        configForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            saveCurrentConfig();
+        });
+    }
 
     // 6. Reset & Fill buttons
-    document.getElementById('resetBtn').addEventListener('click', resetConfig);
-    document.getElementById('fillFormButton').addEventListener('click', fillForm);
+    const resetBtn = document.getElementById('resetBtn');
+    if (resetBtn) resetBtn.addEventListener('click', resetConfig);
+    const fillBtn = document.getElementById('fillFormButton');
+    if (fillBtn) fillBtn.addEventListener('click', fillForm);
 
     // 7. Strikethrough listeners for Extra selects
     DAYS.forEach(day => {
-        document.getElementById(`${day}Extra`).addEventListener('change', (e) => {
-            updateStrikethrough(day, e.target.value);
-        });
-        document.getElementById(`${day}Activity`).addEventListener('change', (e) => {
-            syncStoredFieldsFromActivity(day, e.target.value);
-        });
+        const extraEl = document.getElementById(`${day}Extra`);
+        if (extraEl) {
+            extraEl.addEventListener('change', (e) => {
+                updateStrikethrough(day, e.target.value);
+            });
+        }
+        const activityEl = document.getElementById(`${day}Activity`);
+        if (activityEl) {
+            activityEl.addEventListener('change', (e) => {
+                syncStoredFieldsFromActivity(day, e.target.value);
+            });
+        }
     });
 
     // 8. Bicycle badge: load count & register reset
@@ -87,33 +101,55 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateBikeCountDisplay(items.bicycleCount);
     });
     
-    document.getElementById('bikeModifyBtn').addEventListener('click', (e) => {
-        const area = document.getElementById('bikeUpdateArea');
-        const input = document.getElementById('bikeManualInput');
-        const currentCount = document.getElementById('bikeCount').textContent;
+    const bikeModifyBtn = document.getElementById('bikeModifyBtn');
+    if (bikeModifyBtn) {
+        bikeModifyBtn.addEventListener('click', (e) => {
+            const area = document.getElementById('bikeUpdateArea');
+            const input = document.getElementById('bikeManualInput');
+            const currentCount = document.getElementById('bikeCount')?.textContent || '0';
 
-        area.style.display = 'flex';
-        e.target.style.display = 'none'; // Hide the 'Modifier' button
-        input.value = currentCount;
-        input.focus();
-    });
-
-    document.getElementById('bikeConfirmBtn').addEventListener('click', () => {
-        const input = document.getElementById('bikeManualInput');
-        const val = parseFloat(input.value);
-
-        if (isNaN(val) || val < 0 || val > DAY_BY_YEAR) {
-            flashInstruction(`⚠️ Entre 0 et ${DAY_BY_YEAR}`, 'warning');
-            return;
-        }
-
-        chrome.storage.sync.set({ bicycleCount: val }, () => {
-            updateBikeCountDisplay(val);
-            document.getElementById('bikeUpdateArea').style.display = 'none';
-            document.getElementById('bikeModifyBtn').style.display = 'inline-block'; // Show the button again
-            flashInstruction('🚲 Compteur mis à jour', 'success');
+            if (area) area.style.display = 'flex';
+            e.target.style.display = 'none'; // Hide the 'Modifier' button
+            if (input) {
+                input.value = currentCount;
+                input.focus();
+            }
         });
-    });
+    }
+
+    const bikeConfirmBtn = document.getElementById('bikeConfirmBtn');
+    if (bikeConfirmBtn) {
+        bikeConfirmBtn.addEventListener('click', () => {
+            const input = document.getElementById('bikeManualInput');
+            if (!input) return;
+            const val = parseFloat(input.value);
+
+            if (isNaN(val) || val < 0 || val > DAY_BY_YEAR) {
+                flashInstruction(`⚠️ Entre 0 et ${DAY_BY_YEAR}`, 'warning');
+                return;
+            }
+
+            chrome.storage.sync.set({ bicycleCount: val }, () => {
+                updateBikeCountDisplay(val);
+                const area = document.getElementById('bikeUpdateArea');
+                if (area) area.style.display = 'none';
+                if (bikeModifyBtn) bikeModifyBtn.style.display = 'inline-block'; // Show the button again
+                flashInstruction('🚲 Compteur mis à jour', 'success');
+            });
+        });
+    }
+
+    const bikeResetBtn = document.getElementById('bikeResetBtn');
+    if (bikeResetBtn) {
+        bikeResetBtn.addEventListener('click', () => {
+            if (confirm('Réinitialiser le compteur de trajets vélo ?')) {
+                chrome.storage.sync.set({ bicycleCount: 0, creditedGreenDates: [] }, () => {
+                    updateBikeCountDisplay(0);
+                    flashInstruction('🚲 Compteur réinitialisé', 'success');
+                });
+            }
+        });
+    }
 
     // 9. Project codes auto-fill
     chrome.storage.local.get({ projectCodes: [] }, (items) => {
@@ -122,27 +158,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         populateActivitySelects();
     });
 
-    document.getElementById('refreshProjectsBtn').addEventListener('click', async () => {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (!tab.url || !tab.url.includes(TARGET_URL)) {
-            flashInstruction("❌ Action seulement sur PSA", 'warning');
-            return;
-        }
-
-        flashInstruction("⏳ Recherche en cours...", "info");
-        chrome.tabs.sendMessage(tab.id, { type: 'SCRAPE_PROJECT_CODES', force: true }, (response) => {
-            if (response && response.success) {
-                chrome.storage.local.get({ projectCodes: [] }, (items) => {
-                    projectCodesCache = items.projectCodes;
-                    populateProjectDatalist(items.projectCodes);
-                    populateActivitySelects();
-                    flashInstruction(`✓ ${items.projectCodes.length} codes trouvés`, "success");
-                });
-            } else {
-                flashInstruction("⚠️ Échec de la recherche", "warning");
+    const refreshProjectsBtn = document.getElementById('refreshProjectsBtn');
+    if (refreshProjectsBtn) {
+        refreshProjectsBtn.addEventListener('click', async () => {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (!tab.url || !tab.url.includes(TARGET_URL)) {
+                flashInstruction("❌ Action seulement sur PSA", 'warning');
+                return;
             }
+
+            flashInstruction("⏳ Recherche en cours...", "info");
+            chrome.tabs.sendMessage(tab.id, { type: 'SCRAPE_PROJECT_CODES', force: true }, (response) => {
+                if (response && response.success) {
+                    chrome.storage.local.get({ projectCodes: [] }, (items) => {
+                        projectCodesCache = items.projectCodes;
+                        populateProjectDatalist(items.projectCodes);
+                        populateActivitySelects();
+                        flashInstruction(`✓ ${items.projectCodes.length} codes trouvés`, "success");
+                    });
+                } else {
+                    flashInstruction("⚠️ Échec de la recherche", "warning");
+                }
+            });
         });
-    });
+    }
 
     // Open/Close afternoon localization select
     document.querySelectorAll('.day-localization-morning button').forEach((el) => {
@@ -170,6 +209,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 11. Check PSA page status
     await checkExtensionStatus();
+
+    // 12. Listen for status updates from content script
+    chrome.runtime.onMessage.addListener((msg) => {
+        if (msg.type === 'TABLES_DETECTED') {
+            checkExtensionStatus();
+        }
+    });
 });
 
 function buildDefaultStorage() {
@@ -191,17 +237,24 @@ function buildDefaultStorage() {
  * For 'custom', clears all fields so the user can fill manually.
  */
 function setProfile(profileId, storageItems) {
-    document.getElementById('activeProfileSelect').value = profileId;
+    const profileSelect = document.getElementById('activeProfileSelect');
+    if (profileSelect) profileSelect.value = profileId;
     updateFooterVisibility(profileId);
 
     if (profileId === 'custom') {
         loadConfigIntoForm({ ...DEFAULT_CONFIG, profileName: 'Personnalisé' });
-        document.getElementById('profileName').parentElement.style.display = 'none';
+        const profileName = document.getElementById('profileName');
+        if (profileName && profileName.parentElement) {
+            profileName.parentElement.style.display = 'none';
+        }
         openAccordion();
         return;
     }
 
-    document.getElementById('profileName').parentElement.style.display = 'flex';
+    const profileName = document.getElementById('profileName');
+    if (profileName && profileName.parentElement) {
+        profileName.parentElement.style.display = 'flex';
+    }
     const config = profileId === 'profile1'
         ? (storageItems.savedProfiles.profile1 || { ...DEFAULT_CONFIG, profileName: 'Profil 1' })
         : (storageItems.savedProfiles.profile2 || { ...DEFAULT_CONFIG, profileName: 'Profil 2' });
@@ -211,7 +264,9 @@ function setProfile(profileId, storageItems) {
 }
 
 function saveCurrentConfig() {
-    const profileId = document.getElementById('activeProfileSelect').value;
+    const profileSelect = document.getElementById('activeProfileSelect');
+    if (!profileSelect) return;
+    const profileId = profileSelect.value;
     if (profileId === 'custom') return; // Custom is never saved
 
     const config = getFormConfig();
@@ -244,11 +299,15 @@ function resetConfig() {
 
 async function fillForm() {
     // Fold the config accordion back
-    document.getElementById('configAccordion').classList.remove('open');
-    document.getElementById('toggleConfigBtn').classList.remove('open');
+    const accordion = document.getElementById('configAccordion');
+    const btn = document.getElementById('toggleConfigBtn');
+    if (accordion) accordion.classList.remove('open');
+    if (btn) btn.classList.remove('open');
 
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    const profileId = document.getElementById('activeProfileSelect').value;
+    const profileSelect = document.getElementById('activeProfileSelect');
+    if (!profileSelect) return;
+    const profileId = profileSelect.value;
 
     // Fetch period info to increment bike counter for the whole week
     chrome.tabs.sendMessage(tab.id, { type: 'GET_PERIOD_INFO' }, (response) => {
@@ -285,33 +344,35 @@ async function checkExtensionStatus() {
 
         if (!tab.url || !tab.url.includes(TARGET_URL)) {
             showInstruction("❌ S'utilise sur la page de saisie PSA", 'warning');
-            fillButton.style.display = 'none';
+            if (fillButton) fillButton.style.display = 'none';
             return;
         }
 
-        chrome.tabs.sendMessage(tab.id, { type: 'CHECK_STATUS' }, (response) => {
-            if (chrome.runtime.lastError) {
-                showInstruction("⏳ Chargement de l'extension...", 'warning');
-                fillButton.style.display = 'none';
-            } else if (response && response.loaded) {
+        // Use the background script as the source of truth for status
+        chrome.runtime.sendMessage({ type: 'GET_STATUS', tabId: tab.id }, (response) => {
+            if (response && response.status && response.status.loaded) {
                 showInstruction('✓ Prêt à remplir !', 'success');
-                fillButton.style.display = 'block';
+                if (fillButton) fillButton.style.display = 'block';
             } else {
-                showInstruction('⚠️ Tables PSA non détectées', 'warning');
-                fillButton.style.display = 'none';
+                // If background doesn't know, it might be loading or the tables aren't there
+                showInstruction("⏳ Recherche des tables PSA...", 'warning');
+                if (fillButton) fillButton.style.display = 'none';
             }
         });
-    } catch {
+    } catch (err) {
+        console.error('Extension status check failed:', err);
         showInstruction('❌ Erreur de connexion', 'warning');
-        fillButton.style.display = 'none';
+        if (fillButton) fillButton.style.display = 'none';
     }
 }
 
 /** Permanently sets the instruction bar message. */
 function showInstruction(msg, type) {
     const el = document.getElementById('instructions');
-    el.textContent = msg;
-    el.className = `status-bar show ${type}`;
+    if (el) {
+        el.textContent = msg;
+        el.className = `status-bar show ${type}`;
+    }
 }
 
 /**
@@ -320,6 +381,7 @@ function showInstruction(msg, type) {
  */
 function flashInstruction(msg, type) {
     const el = document.getElementById('instructions');
+    if (!el) return;
     const prevText = el.textContent;
     const prevClass = el.className;
 
@@ -339,22 +401,27 @@ function flashInstruction(msg, type) {
 function toggleAccordion() {
     const accordion = document.getElementById('configAccordion');
     const btn = document.getElementById('toggleConfigBtn');
+    if (!accordion) return;
     const isOpening = !accordion.classList.contains('open');
 
     accordion.classList.toggle('open');
-    btn.classList.toggle('open');
+    if (btn) btn.classList.toggle('open');
     document.body.classList.toggle('expanded', isOpening);
 }
 
 function openAccordion() {
-    document.getElementById('configAccordion').classList.add('open');
-    document.getElementById('toggleConfigBtn').classList.add('open');
+    const accordion = document.getElementById('configAccordion');
+    const btn = document.getElementById('toggleConfigBtn');
+    if (accordion) accordion.classList.add('open');
+    if (btn) btn.classList.add('open');
     document.body.classList.add('expanded');
 }
 
 function closeAccordion() {
-    document.getElementById('configAccordion').classList.remove('open');
-    document.getElementById('toggleConfigBtn').classList.remove('open');
+    const accordion = document.getElementById('configAccordion');
+    const btn = document.getElementById('toggleConfigBtn');
+    if (accordion) accordion.classList.remove('open');
+    if (btn) btn.classList.remove('open');
     document.body.classList.remove('expanded');
 }
 
@@ -403,7 +470,10 @@ function loadConfigIntoForm(config) {
             });
         }
 
-        if (items.reminderTime !== undefined) document.getElementById('reminderTime').value = items.reminderTime;
+        const reminderTimeEl = document.getElementById('reminderTime');
+        if (items.reminderTime !== undefined && reminderTimeEl) {
+            reminderTimeEl.value = items.reminderTime;
+        }
     });
 
     // Apply strikethrough on load
