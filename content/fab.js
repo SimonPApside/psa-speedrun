@@ -98,9 +98,11 @@
       return;
     }
 
-    isPanelOpen = !isPanelOpen;
-    setOpen(isPanelOpen);
-    chrome.runtime.sendMessage({ type: "FAB_TOGGLE", open: isPanelOpen }).catch(() => { });
+    if(isPanelOpen) {
+      isPanelOpen = !isPanelOpen;
+      setOpen(isPanelOpen);
+      chrome.runtime.sendMessage({ type: "FAB_TOGGLE", open: isPanelOpen }).catch(() => { });
+    }
   });
 
   /* ─── Tooltip hover ──────────────────────────────────────── */
