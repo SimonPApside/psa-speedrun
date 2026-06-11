@@ -37,3 +37,14 @@ function parseFrenchDate(dateStr) {
   const [day, month, year] = dateStr.split('/').map(Number);
   return new Date(year, month - 1, day);
 }
+
+/* ── Helpers ──────────────────────────────────────────────────────────── */
+function notifyContentScript(message) {
+  // Send to all content scripts in all matching tabs
+  chrome.tabs.query({}, (tabs) => {
+    for (const tab of tabs) {
+      chrome.tabs.sendMessage(tab.id, message)
+        .catch(() => {}); // tab may not have content script
+    }
+  });
+}

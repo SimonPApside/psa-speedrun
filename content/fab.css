@@ -1,0 +1,318 @@
+/* ── Reset scope ─────────────────────────────────────────────────────── */
+#__ext-fab-root *,
+#__ext-fab-root *::before,
+#__ext-fab-root *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Root container ──────────────────────────────────────────────────── */
+#__ext-fab-root {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 2147483647; /* max z-index */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  pointer-events: none;
+}
+
+#__ext-fab-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  pointer-events: none;
+  width: 180px;
+}
+
+/* ── FAB button ──────────────────────────────────────────────────────── */
+#__ext-fab {
+  pointer-events: all;
+  position: relative;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  outline: none;
+  background: #1a1a2e;
+  box-shadow:
+    0 4px 16px rgba(0,0,0,.35);
+  transition:
+    background 0.3s ease,
+    box-shadow 0.3s ease,
+    width 0.3s cubic-bezier(.34,1.56,.64,1),
+    border-radius 0.3s ease,
+    transform 0.25s cubic-bezier(.34,1.56,.64,1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#__ext-fab:hover {
+  background: #16213e;
+  transform: scale(1.08);
+  box-shadow:
+    0 6px 24px rgba(0,0,0,.4),
+    0 0 0 6px rgba(99, 102, 241, 0.15);
+}
+
+#__ext-fab:active {
+  transform: scale(0.94);
+}
+
+/* ── Open state ──────────────────────────────────────────────────────── */
+#__ext-fab.is-open {
+  background: #6366f1;
+  box-shadow:
+    0 6px 24px rgba(99,102,241,.45),
+    0 0 0 0 rgba(99, 102, 241, 0);
+}
+
+#__ext-fab.is-open:hover {
+  background: #4f46e5;
+  box-shadow:
+    0 8px 28px rgba(99,102,241,.55),
+    0 0 0 6px rgba(99, 102, 241, 0.2);
+}
+
+/* ── Ripple ring ─────────────────────────────────────────────────────── */
+.fab-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+#__ext-fab.is-open .fab-ring::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid rgba(99,102,241,.4);
+  animation: ring-pulse 2s ease-out infinite;
+}
+
+@keyframes ring-pulse {
+  0%   { transform: scale(1);    opacity: 1; }
+  100% { transform: scale(1.55); opacity: 0; }
+}
+
+/* ── Icons ───────────────────────────────────────────────────────────── */
+.fab-icon {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  color: #e0e0ff;
+  transition:
+    opacity 0.2s ease,
+    transform 0.3s cubic-bezier(.34,1.56,.64,1);
+}
+
+/* Default: show open-icon, hide close and fill icons */
+.fab-icon--open  { opacity: 1; transform: rotate(0deg)   scale(1); }
+.fab-icon--open img { border-radius: 50%; scale: 1.3; }
+.fab-icon--close { opacity: 0; transform: rotate(-90deg) scale(0.5); }
+.fab-icon--fill  { 
+  opacity: 0; 
+  transform: scale(0.5); 
+  color: white; 
+  font-size: 14px; 
+  font-weight: 800; 
+  text-transform: uppercase;
+  white-space: nowrap;
+  width: 100%;
+  height: 100%;
+  letter-spacing: 0.05em;
+}
+
+/* When open: swap to close */
+#__ext-fab.is-open .fab-icon--open  { opacity: 0; transform: rotate(90deg)  scale(0.5); }
+#__ext-fab.is-open .fab-icon--close { opacity: 1; transform: rotate(0deg)   scale(1); }
+
+/* When ready and the GROUP is hovered (and not open): transform to pill button */
+#__ext-fab-group:hover #__ext-fab:not(.is-open) {
+  width: 140px;
+  border-radius: 50px; /* Pill shape (half of 52px height) */
+  background: linear-gradient(to right, #ef4444, #30189b);
+  box-shadow: 
+    0 8px 32px rgba(239, 68, 68, 0.3);
+  transform: scale(1.05); /* Slightly less scale since it's wider */
+}
+
+#__ext-fab-group:hover #__ext-fab:not(.is-open):not(.is-ready) {
+  background: dimgrey;
+}
+
+#__ext-fab-group:hover #__ext-fab:not(.is-open) .fab-icon--open { 
+  opacity: 0; 
+  transform: scale(0.5); 
+}
+
+#__ext-fab-group:hover #__ext-fab:not(.is-open) .fab-icon--fill { 
+  opacity: 1; 
+  transform: scale(1); 
+}
+
+#__ext-fab-group:hover #__ext-fab:not(.is-open) .fab-icon--open { 
+  opacity: 0; 
+  transform: scale(0.5); 
+}
+
+/* ── Pop animation (on toggle) ───────────────────────────────────────── */
+@keyframes fab-pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.18); }
+  70%  { transform: scale(0.93); }
+  100% { transform: scale(1); }
+}
+
+#__ext-fab.pop {
+  animation: fab-pop 0.35s cubic-bezier(.36,.07,.19,.97);
+}
+
+/* ── Sub-actions (Settings bubble) ─────────────────────────────────── */
+#__ext-fab-sub-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(10px) scale(0.8);
+  transition: all 0.3s cubic-bezier(.34,1.56,.64,1);
+}
+
+/* Ensure the group captures hover even in the gap */
+#__ext-fab-group {
+  pointer-events: all;
+}
+
+/* Only show sub-actions on group:hover IF #__ext-fab.is-ready is present and NOT open */
+#__ext-fab-group:hover:has(#__ext-fab:not(.is-open)) #__ext-fab-sub-actions {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateY(0) scale(1);
+}
+
+#__ext-fab-group:hover:has(#__ext-fab:not(.is-open)) + #__ext-tooltip {
+    right: 155px;
+}
+
+/* When the panel is open, we don't need the sub-bubble anymore */
+.is-open #__ext-fab-sub-actions {
+  display: none;
+}
+
+#__ext-fab-settings {
+  width: auto;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 16px; /* Pill shape */
+  border: none;
+  background: #1a1a2e;
+  color: #e0e0ff;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+#__ext-fab-settings:hover {
+  background: #6366f1;
+  color: white;
+  transform: scale(1.05);
+}
+
+#__ext-fab-settings svg {
+  width: 14px;
+  height: 14px;
+}
+
+#__ext-fab-settings:hover svg {
+  transform: rotate(45deg);
+}
+
+/* ── Tooltip ─────────────────────────────────────────────────────────── */
+#__ext-tooltip {
+  pointer-events: none;
+  position: absolute;
+  top: 70%;
+  right: 75px;
+  transform: translateY(-50%) translateX(-8px);
+  background: rgba(15, 15, 30, 0.92);
+  color: #e0e0ff;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 5px 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  backdrop-filter: blur(6px);
+  z-index: -1; /* Behind the sub-actions bubble if they overlap */
+}
+
+#__ext-settings-tooltip {
+  pointer-events: none;
+  position: absolute;
+  top: 15%;
+  right: 125px; /* To the left of the button */
+  margin-right: 12px;
+  background: rgba(15, 15, 30, 0.92);
+  color: #e0e0ff;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 4px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  backdrop-filter: blur(6px);
+  z-index: 100;
+  transform: translateY(-50%) translateX(-8px);
+}
+
+#__ext-settings-tooltip.visible {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+#__ext-settings-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-left-color: rgba(15, 15, 30, 0.92);
+}
+
+#__ext-tooltip.visible {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+#__ext-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-left-color: rgba(15, 15, 30, 0.92);
+}

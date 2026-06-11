@@ -8,27 +8,28 @@ let config;
 (async () => {
   config = await fetch(CONFIG_URL).then(res => res.json());
 
-  const intervalId = setInterval(() => {
+  setInterval(() => {
     const doc = getIframeDoc();
-    if (!doc) return;
-
-    const allTablesPresent = config.tables
+    const allTablesPresent = !!(doc && config.tables
       .filter(t => t.required)
-      .every(t => doc.getElementById(t.id));
+      .every(t => doc.getElementById(t.id)));
 
-    if (!allTablesPresent) return;
+    if (allTablesPresent !== isReady) {
+      isReady = allTablesPresent;
 
-    isReady = true;
-    clearInterval(intervalId);
+      if (isReady) {
+        // Auto-scrape projects once a month
+        scrapeProjectCodes();
 
-    // Auto-scrape projects once a month
-    scrapeProjectCodes();
-
-    chrome.runtime.sendMessage({
-      type: 'TABLES_DETECTED',
-      url: window.location.href,
-      timestamp: new Date().toISOString()
-    });
+        chrome.runtime.sendMessage({
+          type: 'TABLES_DETECTED',
+          url: window.location.href,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        chrome.runtime.sendMessage({ type: 'TABLES_NOT_DETECTED' });
+      }
+    }
   }, 500);
 })();
 

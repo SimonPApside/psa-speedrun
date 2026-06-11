@@ -14,6 +14,11 @@ const contentScriptStatus = {};
 chrome.runtime.onInstalled.addListener(() => {
   // Create alarm to check every hour
   chrome.alarms.create('checkReminder', { periodInMinutes: 60 });
+  enableSidePanelAction();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  enableSidePanelAction();
 });
 
 // ============================================================
@@ -28,16 +33,54 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     chrome.action.setBadgeText({ text: '✓', tabId });
     chrome.action.setBadgeBackgroundColor({ color: '#4CAF50', tabId });
+    
+    // Notify the FAB and other content scripts that tables are ready
+    chrome.tabs.sendMessage(tabId, { type: 'TABLES_READY' });
+    
+    sendResponse({ success: true });
+
+  } else if (request.type === 'TABLES_NOT_DETECTED') {
+    delete contentScriptStatus[tabId];
+    chrome.action.setBadgeText({ text: '', tabId });
+    chrome.tabs.sendMessage(tabId, { type: 'TABLES_NOT_READY' });
     sendResponse({ success: true });
 
   } else if (request.type === 'GET_STATUS') {
-    sendResponse({ status: contentScriptStatus[request.tabId] || { loaded: false } });
+    const targetTabId = request.tabId || tabId;
+    sendResponse({ status: contentScriptStatus[targetTabId] || { loaded: false } });
+
+  } else if (request.type === 'FILL_FORM_FROM_FAB') {
+    // Forward the fill request from FAB to the main content script
+    chrome.tabs.sendMessage(tabId, { type: 'FILL_FORM' });
+    sendResponse({ success: true });
 
   } else if (request.message === 'GET_PUBLIC_HOLIDAYS') {
     getJoursFeriesOfWeek(new Date(request.data)).then(result => sendResponse(result));
   } else if (request.message === 'CREATE_NOTIFICATION') {
     createNotification(null, request.data);
     sendResponse({ success: true });
+  } else if (request.type === 'FAB_TOGGLE') {
+    console.log(request);
+    const windowId = sender.tab?.windowId;
+
+    if (!windowId) {
+      sendResponse({ success: false });
+      return true;
+    }
+
+    let promise;
+    if(request.open) {
+      promise = chrome.sidePanel.open({ windowId });
+    } else {
+      promise = chrome.sidePanel.close({ windowId });
+    }
+    promise.then(() => {
+        setPanelState(request.open);
+        sendResponse({ success: true });
+      })
+      .catch(() => sendResponse({ success: false }));
+
+    return true;
   }
 
   return true;
@@ -52,13 +95,46 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   delete contentScriptStatus[tabId];
 });
 
-// Clear badge when navigating away from the target page
+// Clear badge and status when navigating
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-  if (changeInfo.url && !changeInfo.url.includes(TARGET_URL)) {
-    chrome.action.setBadgeText({ text: '', tabId });
+  if (changeInfo.url) {
+    if (!changeInfo.url.includes(TARGET_URL)) {
+      chrome.action.setBadgeText({ text: '', tabId });
+    }
     delete contentScriptStatus[tabId];
   }
 });
+
+// ============================================================
+// PANEL LIFECYCLE
+// ============================================================
+
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name !== 'sidepanel') return;
+ 
+  setPanelState(true);
+ 
+  port.onDisconnect.addListener(() => {
+    setPanelState(false);
+  });
+});
+ 
+function enableSidePanelAction() {
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+}
+
+function setPanelState(open) {
+  chrome.storage.local.set({ panelOpen: open });
+ 
+  chrome.tabs.query({}, (tabs) => {
+    for (const tab of tabs) {
+      chrome.tabs.sendMessage(tab.id, { type: 'PANEL_STATE_CHANGED', open })
+        .catch(() => {});
+    }
+  });
+}
+ 
+
 
 // ============================================================
 // PUBLIC HOLIDAYS
