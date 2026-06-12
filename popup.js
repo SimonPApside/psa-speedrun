@@ -258,9 +258,11 @@ function setProfile(profileId, storageItems) {
     if (profileName && profileName.parentElement) {
         profileName.parentElement.style.display = 'flex';
     }
-    const config = profileId === 'profile1'
+    const rawConfig = profileId === 'profile1'
         ? (storageItems.savedProfiles.profile1 || { ...DEFAULT_CONFIG, profileName: 'Profil 1' })
         : (storageItems.savedProfiles.profile2 || { ...DEFAULT_CONFIG, profileName: 'Profil 2' });
+
+    const config = normalizeProfileConfig(rawConfig);
 
     chrome.storage.sync.set({ currentConfig: config, activeProfileId: profileId });
     loadConfigIntoForm(config);
@@ -562,6 +564,8 @@ function updateProfileSelectVisuals(savedProfiles) {
 function loadConfigIntoForm(config) {
     if (!config) return;
 
+    config = normalizeProfileConfig(config);
+
     // Standard fields
     Object.entries(config).forEach(([key, value]) => {
         const el = document.getElementById(key);
@@ -613,6 +617,10 @@ function getFormConfig() {
         const el = document.getElementById(key);
         if (el) config[key] = el.type === 'number' ? parseFloat(el.value) : el.value;
     });
+    config.BILLING_ACTION = document.getElementById('BILLING_ACTION')?.value || config.BILLING_ACTION || 'B';
+
+    const migrated = normalizeProfileConfig(config);
+    console.log('[PSA DEBUG] getFormConfig result:', JSON.parse(JSON.stringify(migrated)));
 
     // Save reminder settings globally
     const reminderDays = [1, 2, 3, 4, 5]
@@ -624,7 +632,25 @@ function getFormConfig() {
         reminderTime: document.getElementById('reminderTime').value
     });
 
-    return config;
+    return migrated;
+}
+
+function normalizeProfileConfig(config) {
+    if (!config) return config;
+
+    const normalized = { ...config };
+
+    // Backward compatibility: old builds stored this value under BILLING_ACTION$0.
+    if (normalized.BILLING_ACTION === undefined && normalized['BILLING_ACTION$0'] !== undefined) {
+        normalized.BILLING_ACTION = normalized['BILLING_ACTION$0'];
+    }
+
+    delete normalized['BILLING_ACTION$0'];
+    if (normalized.BILLING_ACTION === undefined || normalized.BILLING_ACTION === null || normalized.BILLING_ACTION === '') {
+        normalized.BILLING_ACTION = 'B';
+    }
+
+    return normalized;
 }
 
 function populateSelectOptions(config) {

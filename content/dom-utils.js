@@ -1,8 +1,12 @@
 'use strict';
 
-/** Returns the document inside the PSA iframe. */
+/** Returns the document inside the PSA iframe, or null if not yet accessible. */
 function getIframeDoc() {
-  return document.getElementsByTagName('iframe')[0]?.contentWindow?.document ?? null;
+  try {
+    return document.getElementsByTagName('iframe')[0]?.contentWindow?.document ?? null;
+  } catch (e) {
+    return null;
+  }
 }
 
 /** Sets an element's value and fires a change event so PSA reacts. */
