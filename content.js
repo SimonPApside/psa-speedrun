@@ -63,13 +63,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
 
       fillInputsRest(confirmedHolidays, () => {
-        const doc = getIframeDoc();
-
-        // Apply billing action at the end, after additional-info flow,
-        // because the roundtrip can reset the header select.
+        // Apply billing action after returning to the main timesheet page.
+        // During postback transitions, the field can be temporarily missing.
         chrome.storage.sync.get({ currentConfig: {} }, ({ currentConfig }) => {
-          setFieldValue(doc, 'BILLING_ACTION$0', currentConfig.BILLING_ACTION$0, true);
+          applyBillingActionWhenReady(currentConfig.BILLING_ACTION);
         });
+
+        const doc = getIframeDoc();
 
         const periodEndEl = doc?.getElementById('EX_TIME_HDR_PERIOD_END_DT');
         if (periodEndEl?.innerText) {
@@ -106,7 +106,7 @@ async function fillAdditionalHeaderFields() {
   console.log('[PSA DEBUG] currentConfig from storage:', settings);
   console.log('[PSA DEBUG] UC_EX_TIME_HDR_UC_SCHEDULED_HRS =', settings.UC_EX_TIME_HDR_UC_SCHEDULED_HRS);
   console.log('[PSA DEBUG] UC_EX_TIME_HDR_UC_REASON_CODE =', settings.UC_EX_TIME_HDR_UC_REASON_CODE);
-  console.log('[PSA DEBUG] BILLING_ACTION$0 =', settings.BILLING_ACTION$0);
+  console.log('[PSA DEBUG] BILLING_ACTION =', settings.BILLING_ACTION);
 
   // Scheduled hours and reason need a change event to be tracked by PeopleSoft.
   // Billing action is applied at the end of the pipeline to avoid being reset
@@ -143,6 +143,44 @@ function setFieldValue(doc, fieldId, value, dispatchChange = true) {
     el.dispatchEvent(new Event('change'));
   }
   console.log(`[PSA DEBUG] Set '${fieldId}' to '${value}' ✓ (dispatchChange=${dispatchChange})`);
+}
+
+function applyBillingActionWhenReady(value) {
+  if (value === undefined || value === null || value === '') return;
+
+  let attempts = 0;
+  const maxAttempts = 20;
+  const intervalId = setInterval(() => {
+    attempts += 1;
+
+    const doc = getIframeDoc();
+    if (!doc) {
+      if (attempts >= maxAttempts) clearInterval(intervalId);
+      return;
+    }
+
+    const billingEl =
+      doc.querySelector('[id^="BILLING_ACTION"], [name^="BILLING_ACTION"]') ||
+      Array.from(doc.querySelectorAll('select')).find((select) => {
+        const values = new Set(Array.from(select.options).map((o) => o.value));
+        return values.has('B') && values.has('I') && values.has('U');
+      });
+
+    console.log('[PSA DEBUG] applyBillingActionWhenReady attempt', attempts, '->', billingEl);
+
+    if (!billingEl) {
+      if (attempts >= maxAttempts) {
+        console.warn('[PSA DEBUG] Billing field still not found after retries');
+        clearInterval(intervalId);
+      }
+      return;
+    }
+
+    billingEl.value = value;
+    billingEl.dispatchEvent(new Event('change'));
+    console.log(`[PSA DEBUG] Billing action applied late as '${value}' ✓`);
+    clearInterval(intervalId);
+  }, 500);
 }
 
 /**
