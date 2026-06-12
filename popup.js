@@ -620,7 +620,6 @@ function getFormConfig() {
     config.BILLING_ACTION = document.getElementById('BILLING_ACTION')?.value || config.BILLING_ACTION || 'B';
 
     const migrated = normalizeProfileConfig(config);
-    console.log('[PSA DEBUG] getFormConfig result:', JSON.parse(JSON.stringify(migrated)));
 
     // Save reminder settings globally
     const reminderDays = [1, 2, 3, 4, 5]

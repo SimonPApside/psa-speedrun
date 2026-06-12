@@ -44,15 +44,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ periodEndDate: periodEndEl?.innerText || null });
 
   } else if (request.type === 'FILL_FORM') {
-    console.log('[PSA DEBUG] FILL_FORM handler reached — new code is active ✓');
     if (!config) {
-      console.warn('[PSA DEBUG] config not loaded, aborting');
       sendResponse({ success: false });
       return true;
     }
 
     (async () => {
-      console.log('[PSA DEBUG] starting async fill pipeline');
       const confirmedHolidays = await askForHolidayConfirmation();
       const startTime = performance.now();
       await fillInputs(confirmedHolidays);
@@ -99,14 +96,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
  */
 async function fillAdditionalHeaderFields() {
   const doc = getIframeDoc();
-  console.log('[PSA DEBUG] fillAdditionalHeaderFields - doc:', doc);
   if (!doc) return;
 
   const { currentConfig: settings } = await chrome.storage.sync.get({ currentConfig: {} });
-  console.log('[PSA DEBUG] currentConfig from storage:', settings);
-  console.log('[PSA DEBUG] UC_EX_TIME_HDR_UC_SCHEDULED_HRS =', settings.UC_EX_TIME_HDR_UC_SCHEDULED_HRS);
-  console.log('[PSA DEBUG] UC_EX_TIME_HDR_UC_REASON_CODE =', settings.UC_EX_TIME_HDR_UC_REASON_CODE);
-  console.log('[PSA DEBUG] BILLING_ACTION =', settings.BILLING_ACTION);
 
   // Scheduled hours and reason need a change event to be tracked by PeopleSoft.
   // Billing action is applied at the end of the pipeline to avoid being reset
@@ -123,18 +115,7 @@ function setFieldValue(doc, fieldId, value, dispatchChange = true) {
   const byIdPrefixed = doc.querySelector(`[id^="${fieldId}$"]`);
   const byNamePrefixed = doc.querySelector(`[name^="${fieldId}$"]`);
   const el = byId || byName || byIdPrefixed || byNamePrefixed;
-  console.log(
-    `[PSA DEBUG] setFieldValue('${fieldId}', '${value}') → getElementById:`,
-    byId,
-    '| byName:',
-    byName,
-    '| byIdPrefixed:',
-    byIdPrefixed,
-    '| byNamePrefixed:',
-    byNamePrefixed
-  );
   if (!el) {
-    console.warn(`[PSA DEBUG] Element not found for fieldId='${fieldId}'`);
     return;
   }
 
@@ -142,7 +123,6 @@ function setFieldValue(doc, fieldId, value, dispatchChange = true) {
   if (dispatchChange) {
     el.dispatchEvent(new Event('change'));
   }
-  console.log(`[PSA DEBUG] Set '${fieldId}' to '${value}' ✓ (dispatchChange=${dispatchChange})`);
 }
 
 function applyBillingActionWhenReady(value) {
@@ -166,11 +146,8 @@ function applyBillingActionWhenReady(value) {
         return values.has('B') && values.has('I') && values.has('U');
       });
 
-    console.log('[PSA DEBUG] applyBillingActionWhenReady attempt', attempts, '->', billingEl);
-
     if (!billingEl) {
       if (attempts >= maxAttempts) {
-        console.warn('[PSA DEBUG] Billing field still not found after retries');
         clearInterval(intervalId);
       }
       return;
@@ -178,7 +155,6 @@ function applyBillingActionWhenReady(value) {
 
     billingEl.value = value;
     billingEl.dispatchEvent(new Event('change'));
-    console.log(`[PSA DEBUG] Billing action applied late as '${value}' ✓`);
     clearInterval(intervalId);
   }, 500);
 }
