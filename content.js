@@ -53,13 +53,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       const confirmedHolidays = await askForHolidayConfirmation();
       const startTime = performance.now();
       await fillInputs(confirmedHolidays);
+      await fillAdditionalHeaderFields();
 
       injectCode(chrome.runtime.getURL('resources/triggerClickFunction.js'), {
         targetId: 'UC_EX_WRK_UC_TI_FRA_LINK'
       });
 
       fillInputsRest(confirmedHolidays, () => {
+        // Apply billing action after returning to the main timesheet page.
+        // During postback transitions, the field can be temporarily missing.
+        chrome.storage.sync.get({ currentConfig: {} }, ({ currentConfig }) => {
+          applyBillingActionWhenReady(currentConfig.BILLING_ACTION);
+        });
+
         const doc = getIframeDoc();
+
         const periodEndEl = doc?.getElementById('EX_TIME_HDR_PERIOD_END_DT');
         if (periodEndEl?.innerText) {
           chrome.storage.local.set({ saisieEffectuee: periodEndEl.innerText });
@@ -81,6 +89,75 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   return true; // Keep the message channel open for async sendResponse
 });
+
+/**
+ * Copies the editable PSA header fields from the popup config into the page.
+ * This keeps the popup as the source of truth without changing the hour logic.
+ */
+async function fillAdditionalHeaderFields() {
+  const doc = getIframeDoc();
+  if (!doc) return;
+
+  const { currentConfig: settings } = await chrome.storage.sync.get({ currentConfig: {} });
+
+  // Scheduled hours and reason need a change event to be tracked by PeopleSoft.
+  // Billing action is applied at the end of the pipeline to avoid being reset
+  // by the additional-info roundtrip.
+  setFieldValue(doc, 'UC_EX_TIME_HDR_UC_SCHEDULED_HRS', settings.UC_EX_TIME_HDR_UC_SCHEDULED_HRS, true);
+  setFieldValue(doc, 'UC_EX_TIME_HDR_UC_REASON_CODE', settings.UC_EX_TIME_HDR_UC_REASON_CODE, true);
+}
+
+function setFieldValue(doc, fieldId, value, dispatchChange = true) {
+  if (value === undefined || value === null) return;
+
+  const byId = doc.getElementById(fieldId);
+  const byName = doc.querySelector(`[name="${fieldId}"]`);
+  const byIdPrefixed = doc.querySelector(`[id^="${fieldId}$"]`);
+  const byNamePrefixed = doc.querySelector(`[name^="${fieldId}$"]`);
+  const el = byId || byName || byIdPrefixed || byNamePrefixed;
+  if (!el) {
+    return;
+  }
+
+  el.value = value;
+  if (dispatchChange) {
+    el.dispatchEvent(new Event('change'));
+  }
+}
+
+function applyBillingActionWhenReady(value) {
+  if (value === undefined || value === null || value === '') return;
+
+  let attempts = 0;
+  const maxAttempts = 20;
+  const intervalId = setInterval(() => {
+    attempts += 1;
+
+    const doc = getIframeDoc();
+    if (!doc) {
+      if (attempts >= maxAttempts) clearInterval(intervalId);
+      return;
+    }
+
+    const billingEl =
+      doc.querySelector('[id^="BILLING_ACTION"], [name^="BILLING_ACTION"]') ||
+      Array.from(doc.querySelectorAll('select')).find((select) => {
+        const values = new Set(Array.from(select.options).map((o) => o.value));
+        return values.has('B') && values.has('I') && values.has('U');
+      });
+
+    if (!billingEl) {
+      if (attempts >= maxAttempts) {
+        clearInterval(intervalId);
+      }
+      return;
+    }
+
+    billingEl.value = value;
+    billingEl.dispatchEvent(new Event('change'));
+    clearInterval(intervalId);
+  }, 500);
+}
 
 /**
  * Reads the period end date from the PSA page, asks the background worker

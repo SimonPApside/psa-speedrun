@@ -366,33 +366,6 @@
             color: #92400e;
         }
 
-        .update-banner {
-            display: none;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            padding: 8px 12px;
-            background: #ecfeff;
-            color: #155e75;
-            border-bottom: 1px solid #a5f3fc;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .update-banner.show {
-            display: flex;
-        }
-
-        .update-banner a {
-            color: #0e7490;
-            text-decoration: none;
-            white-space: nowrap;
-        }
-
-        .update-banner a:hover {
-            text-decoration: underline;
-        }
-
         /* Actions Footer */
         .config-footer {
             display: flex;
@@ -870,21 +843,31 @@
                 <form id="configForm">
                     <div class="section-title">Paramètres Généraux</div>
                     <div class="form-grid">
-                        <div class="form-group">
+                        <div class="form-group" style="flex: 1 1 100%;">
                             <label for="profileName">Nom du profil</label>
                             <input type="text" id="profileName" name="profileName" placeholder="Mon Profil">
                         </div>
-                        <div class="form-group form-group-row" style="gap: 20px;">
-                            <div class="form-group">
+                        <div class="form-group form-group-row" style="gap: 20px; flex: 1 1 100%;">
+                            <div class="form-group" style="flex:1;">
                                 <label for="workHours">Heures / jour</label>
                                 <input type="number" id="workHours" name="workHours" min="1" max="24" step="0.1"
                                     placeholder="8" list="contractualHoursList" required>
                                 <datalist id="contractualHoursList"></datalist>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" style="flex:1;">
                                 <label for="restTime">Pause Déj</label>
                                 <select id="restTime" name="restTime" required></select>
                             </div>
+                        </div>
+                        <div class="form-group" style="flex: 1 1 100%;">
+                            <label for="BILLING_ACTION">
+                                Action de facturation
+                            </label>
+                            <select id="BILLING_ACTION" name="BILLING_ACTION">
+                                <option value="B">Facturable</option>
+                                <option value="I">Facture int.</option>
+                                <option value="U">Non facturable</option>
+                            </select>
                         </div>
                     </div>
 
@@ -1040,6 +1023,81 @@
                         </div>
                     </div>
 
+                    <div class="specific-fields">
+                        <div class="section-title">Champs Spécifiques</div>
+                        <div class="form-grid">
+                            <div class="form-group form-group-row" style="gap: 20px; align-items: flex-end;">
+                                <!-- Heures programmées -->
+                                <div class="form-group" style="flex:1;">
+                                    <label for="UC_EX_TIME_HDR_UC_SCHEDULED_HRS">
+                                        Heures programmées
+                                    </label>
+                                    <input
+                                        type="number"
+                                        id="UC_EX_TIME_HDR_UC_SCHEDULED_HRS"
+                                        name="UC_EX_TIME_HDR_UC_SCHEDULED_HRS"
+                                        min="0"
+                                        step="0.5"
+                                        value="0">
+                                </div>
+                                <!-- Raison de modification -->
+                                <div class="form-group" style="flex:1;">
+                                    <label for="UC_EX_TIME_HDR_UC_REASON_CODE">
+                                        Raison de modification
+                                    </label>
+                                    <select id="UC_EX_TIME_HDR_UC_REASON_CODE" name="UC_EX_TIME_HDR_UC_REASON_CODE">
+                                        <option value="">-- Sélectionner --</option>
+                                        <option value="CON_TEMP">
+                                            Abs/JFsur tps partiel/tps partiel variable par sem
+                                        </option>
+                                        <option value="CAN_FLEX">
+                                            Associe CDN rap h trav. sur 2 sem.
+                                        </option>
+                                        <option value="US_FLEX">
+                                            Associe US rap h trav. sur 2 sem.
+                                        </option>
+                                        <option value="MW_STAT">
+                                            Associe en absence temp./retour trav./termine
+                                        </option>
+                                        <option value="TEMP">
+                                            Associe temporaire trav.sur horaire variable
+                                        </option>
+                                        <option value="COVID19">
+                                            COVID-19
+                                        </option>
+                                        <option value="MDW_SCH">
+                                            Chg. d'horaire (embauche/reembauche, chg d'horaire)
+                                        </option>
+                                        <option value="KIKY">
+                                            Finland Partners KIKY hours 24h annually
+                                        </option>
+                                        <option value="ROT_SCH">
+                                            Horaire de rotation
+                                        </option>
+                                        <option value="SOLIDAR">
+                                            Journée de solidarité
+                                        </option>
+                                        <option value="PROG_SCH">
+                                            Retour progressif-memb.revient conge maladie
+                                        </option>
+                                        <option value="SOU_MODA">
+                                            Souplesse modalite RM
+                                        </option>
+                                        <option value="TMP_IND">
+                                            Temporary Assignment - India to Europe/APAC
+                                        </option>
+                                        <option value="SHIFT">
+                                            Trav. de quart - horaire reparti sur 2 sem.
+                                        </option>
+                                        <option value="BEN/CON">
+                                            Travaux passagers/duree contract
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="reminder-details">
                         <div class="reminder-title">Rappels Automatiques (tous les profils)</div>
                         <div class="form-grid">

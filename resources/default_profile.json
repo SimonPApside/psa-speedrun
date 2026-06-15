@@ -1,6 +1,9 @@
 {
     "workHours": 8,
     "restTime": 1,
+    "UC_EX_TIME_HDR_UC_SCHEDULED_HRS": 35,
+    "UC_EX_TIME_HDR_UC_REASON_CODE": "",
+    "BILLING_ACTION": "B",
     "mondayAM": "NA",
     "mondayPM": "NA",
     "mondayExtra": "NONE",
