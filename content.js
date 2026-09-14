@@ -140,7 +140,7 @@ async function scrapeProjectCodes(force = false) {
         const iframe = getIframeDoc();
         const resultsTable = iframe.getElementById('PTSRCHRESULTS');
         if (resultsTable) {
-          const links = Array.from(resultsTable.querySelectorAll('tr a[name^="RESULT"]'));
+          const links = Array.from(resultsTable.querySelectorAll('tr a[id^="SEARCH_RESULT"]'));
           const foundCodes = links.map(a => a.innerText.trim()).filter(t => t.length > 0);
           resolve(foundCodes);
           clearInterval(check);
