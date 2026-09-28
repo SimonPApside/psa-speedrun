@@ -3,9 +3,55 @@
 All notable changes to the PSA Speedrun extension will be documented in this file.
 Toutes les modifications notables apportées à l'extension PSA Speedrun seront documentées dans ce fichier.
 
-## 2026-04-14
+## [1.0.2] - 2026-09-28
 
-### Added / Ajouts
+### Fixed / Corrections
+- **Update Banner**: The banner announcing a new version is displayed again in the side panel. The markup had been lost during the side panel migration and the version check was no longer triggered at startup.
+  - *Bannière de mise à jour : la bannière annonçant une nouvelle version s'affiche de nouveau dans le side panel. Le HTML avait été perdu lors de la migration vers le side panel et la vérification de version n'était plus déclenchée au démarrage.*
+- **Documentation**: Updated README.
+  - *Documentation: Mise à jour du README.*
+
+### Changed / Modifications
+- **Documentation**: Simplified README with a short description and links to the changelog and releases; changelog now organized by version.
+  - *Documentation : README simplifié avec une courte description et des liens vers le changelog et les releases ; changelog désormais organisé par version.*
+
+## [1.0.1] - 2026-09-14
+
+### Fixed / Corrections
+- **Project Code Search**: Fixed the search when the table contains multiple rows (#10).
+  - *Recherche du code projet : correction de la recherche lorsque le tableau contient plusieurs lignes (#10).*
+
+## [1.0] - Initial version / Version initiale (2026-02-19 → 2026-06-11)
+
+### 2026-04-24 → 2026-06-11
+
+#### Added / Ajouts
+- **Side Panel**: The extension opens in the browser side panel instead of a popup, with a floating button (FAB) on the PSA page to open or close it.
+  - *Side panel : l'extension s'ouvre dans le panneau latéral du navigateur au lieu d'un popup, avec un bouton flottant (FAB) sur la page PSA pour l'ouvrir ou le fermer.*
+- **Grouped Activity Selector**: Project and extra inputs are merged into a single grouped selector.
+  - *Sélecteur d'activité groupé : les saisies projet et les saisies annexes sont regroupées dans un seul sélecteur.*
+- **Split Shifts**: The location can be set separately for the morning and the afternoon of each day.
+  - *Demi-journées séparées : le lieu peut être défini séparément pour le matin et l'après-midi de chaque jour.*
+- **Timesheet Reminders**: Browser notifications remind you to fill your timesheet, on the days and at the time of your choice.
+  - *Rappels de feuille de temps : des notifications du navigateur vous rappellent de remplir votre feuille de temps, aux jours et à l'heure de votre choix.*
+- **Update Detection**: The extension compares its version with the `manifest.json` on the `main` branch of the GitHub repository (checked at most every 6 hours). The banner was not displayed, see 1.0.2.
+  - *Détection de mise à jour : l'extension compare sa version avec le `manifest.json` de la branche `main` du dépôt GitHub (vérification au maximum toutes les 6 heures). La bannière ne s'affichait pas, voir 1.0.2.*
+
+#### Changed / Modifications
+- **New Logo**: Updated extension icons.
+  - *Nouveau logo : mise à jour des icônes de l'extension.*
+- **Permissions**: Added `alarms` and `sidePanel` to the manifest permissions.
+  - *Permissions : ajout de `alarms` et `sidePanel` aux permissions du manifest.*
+
+#### Fixed / Corrections
+- **Public Holidays**: Hotfix on the retrieval of public holidays.
+  - *Jours fériés : correctif sur la récupération des jours fériés.*
+- **Intercontrat Label**: Fixed the label of the Intercontrat option.
+  - *Libellé Intercontrat : correction du libellé de l'option Intercontrat.*
+
+### 2026-04-14
+
+#### Added / Ajouts
 - **Project Code Auto-fill**: Automatically discover and suggest available project codes by scraping the PSA search popup.
   - *Auto-remplissage des codes projet : découverte et suggestion automatique des codes projet via le scan de la popup PSA.*
 - **Smart Hour Calculation**: The filler now accounts for existing entries (like absences) and only supplements the remaining hours to reach the daily target.
@@ -15,7 +61,7 @@ Toutes les modifications notables apportées à l'extension PSA Speedrun seront 
 - **Visual Feedback**: Added tooltips and a discrete refresh icon for project code discovery.
   - *Retours visuels : ajout d'infobulles et d'une icône de rafraîchissement discrète pour la recherche des codes projet.*
 
-### Fixed / Corrections
+#### Fixed / Corrections
 - **Bicycle Counter Logic**: Fixed a bug where corrections (changing a green day to non-green) wouldn't decrement the counter.
   - *Logique du compteur vélo : correction d'un bug où le changement d'un jour vert en jour non-vert ne décrémentait pas le compteur.*
 - **Dynamic Row Resolution**: Improved robustness by identifying PSA rows via labels rather than hardcoded IDs.
@@ -23,9 +69,9 @@ Toutes les modifications notables apportées à l'extension PSA Speedrun seront 
 - **Security/Reliability**: Switched to injected scripts for programmatic clicks to bypass PeopleSoft framework restrictions.
   - *Sécurité/Fiabilité : passage à l'injection de scripts pour les clics programmatiques afin de contourner les restrictions du framework PeopleSoft.*
 
-## 2026-04-09
+### 2026-04-09
 
-### Added / Ajouts
+#### Added / Ajouts
 - **Public Holiday Support**: Automatic detection of French bank holidays with a prompt to fill them.
   - *Support des jours fériés : détection automatique des jours fériés français avec demande de confirmation pour le remplissage.*
 - **Rest & Location Filling**: Automated population of rest time and location codes based on your selected transport.
@@ -35,13 +81,13 @@ Toutes les modifications notables apportées à l'extension PSA Speedrun seront 
 - **Manual Green Transport Entry**: Initial implementation of the bicycle counter adjustment flow.
   - *Saisie manuelle transport vert : implémentation initiale du flux d'ajustement du compteur vélo.*
 
-### Changed / Modifications
+#### Changed / Modifications
 - **Modularization**: Refactored content scripts into specialized modules (`fill-hours.js`, `fill-rest.js`, `dom-utils.js`) for better maintainability.
   - *Modularisation : refactorisation des scripts de contenu en modules spécialisés pour une meilleure maintenance.*
 
-## 2026-03-02
+### 2026-03-02
 
-### Added / Ajouts
+#### Added / Ajouts
 - **Project Hour Filling**: Core logic to find/claim/create project rows and fill hours.
   - *Remplissage des heures projet : logique de base pour trouver, réclamer ou créer des lignes projet et remplir les heures.*
 - **Profile Personalization**: Ability to rename profiles and save distinct configurations.
@@ -49,10 +95,13 @@ Toutes les modifications notables apportées à l'extension PSA Speedrun seront 
 - **Intercontrat Support**: Explicit support for "Travaux passagers" rows.
   - *Support Intercontrat : support explicite pour les lignes de "Travaux passagers".*
 
-## 2026-02-19
+### 2026-02-19
 
-### Initial Release / Version Initiale
+#### Initial Release / Version Initiale
 - **PSA a long story**: Core extension features for automated timesheet filling.
   - *PSA a long story : fonctionnalités de base de l'extension pour le remplissage automatisé de la feuille de temps.*
 - **Multi-profile support**: Switch between different project configurations easily.
   - *Support multi-profils : basculement facile entre différentes configurations de projet.*
+
+[1.0.2]: https://github.com/SimonPApside/psa-speedrun/compare/1.0.1...1.0.2
+[1.0.1]: https://github.com/SimonPApside/psa-speedrun/releases/tag/1.0.1
