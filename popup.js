@@ -55,8 +55,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         setProfile(profileId, items);
     });
 
-    // 3. Accordion toggle (Removed button, always open)
-    // document.getElementById('toggleConfigBtn').addEventListener('click', toggleAccordion);
+    // 3. Check new version
+    await checkForAvailableUpdate();
 
     // 4. Profile selector
     const profileSelect = document.getElementById('activeProfileSelect');
@@ -408,6 +408,8 @@ async function checkForAvailableUpdate() {
 
         const currentVersion = chrome.runtime.getManifest().version;
         const latestVersion = normalizeVersion(latestManifest.version);
+
+        console.log(currentVersion, latestVersion, isVersionNewer(latestVersion, currentVersion));
 
         if (isVersionNewer(latestVersion, currentVersion)) {
             showUpdateBanner(currentVersion, latestVersion);
