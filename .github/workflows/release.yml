@@ -1,0 +1,55 @@
+name: Update Extension Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "New release version"
+        required: true
+        type: string
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Update manifest version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          node -e '
+            const fs = require("fs");
+
+            const path = "manifest.json";
+            const manifest = JSON.parse(fs.readFileSync(path, "utf8"));
+
+            manifest.version = process.env.VERSION;
+
+            fs.writeFileSync(
+              path,
+              JSON.stringify(manifest, null, 2) + "\n"
+            );
+          '
+
+      - name: Commit changes
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add manifest.json
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: update extension version to $VERSION"
+          git push
