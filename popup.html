@@ -73,6 +73,24 @@
             min-width: 0;
         }
 
+        .profile-icon-select {
+            flex: 0 0 44px;
+            width: 44px;
+            padding: 8px 2px;
+            text-align: center;
+            font-size: 0.95rem;
+            appearance: none;
+        }
+
+        .profile-name-group {
+            flex: 1 1 0;
+            min-width: 0;
+        }
+
+        .profile-name-group input {
+            width: 100%;
+        }
+
         select {
             width: 100%;
             padding: 8px 10px;
@@ -774,7 +792,7 @@
             }
 
             .profile-select-wrapper {
-                flex: 1 1 100%;
+                flex: 1 1 auto;
             }
 
             .btn-fill {
@@ -860,12 +878,11 @@
         <div class="controls-bar">
             <div class="profile-select-wrapper">
                 <select id="activeProfileSelect" title="Choisir un profil">
-                    <option value="profile1">👤 Profil 1</option>
-                    <option value="profile2">👤 Profil 2</option>
+                    <option value="profile1">Profil 1</option>
+                    <option value="profile2">Profil 2</option>
                     <option value="custom">📝 Personnalisé</option>
                 </select>
             </div>
-
             <button id="fillFormButton" class="btn-fill" title="Remplir le formulaire PSA">Remplir</button>
         </div>
 
@@ -875,9 +892,22 @@
                 <form id="configForm">
                     <div class="section-title">Paramètres Généraux</div>
                     <div class="form-grid">
-                        <div class="form-group">
+                        <div class="form-group profile-name-group">
                             <label for="profileName">Nom du profil</label>
-                            <input type="text" id="profileName" name="profileName" placeholder="Mon Profil">
+                            <div class="form-group form-group-row">
+                                <select id="profileIcon" class="profile-icon-select" name="profileIcon"
+                                    title="Icône du profil" aria-label="Icône du profil">
+                                    <option value="👤">👤</option>
+                                    <option value="💼">💼</option>
+                                    <option value="🏠">🏠</option>
+                                    <option value="🚲">🚲</option>
+                                    <option value="⭐">⭐</option>
+                                    <option value="🎯">🎯</option>
+                                    <option value="🌴">🌴</option>
+                                    <option value="📚">📚</option>
+                                </select>
+                                <input type="text" id="profileName" name="profileName" placeholder="Mon Profil">
+                            </div>
                         </div>
                         <div class="form-group form-group-row" style="gap: 20px;">
                             <div class="form-group">
