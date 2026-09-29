@@ -6,7 +6,7 @@ const TARGET_URL = 'https://psa-fs.ent.cgi.com/psc/fsprda/EMPLOYEE/ERP/c/';
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 const DAY_BY_YEAR = 365;
 const GITHUB_REPOSITORY = 'SimonPApside/psa-speedrun';
-const GITHUB_MAIN_MANIFEST_API_URL = `https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/manifest.json?ref=main`;
+const GITHUB_LATEST_RELEASE_API_URL = `https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest`;
 const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 // Populated at startup from config.json (transportOptions with green:true)
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // 3. Check new version
-    await checkForAvailableUpdate();
+    checkForAvailableUpdate();
 
     // 4. Profile selector
     const profileSelect = document.getElementById('activeProfileSelect');
@@ -403,52 +403,56 @@ function flashInstruction(msg, type) {
 
 async function checkForAvailableUpdate() {
     try {
-        const latestManifest = await getLatestManifest();
-        if (!latestManifest?.version) return;
+        const latestRelease = await getLatestRelease();
+        if (!latestRelease?.tag_name) return;
 
         const currentVersion = chrome.runtime.getManifest().version;
-        const latestVersion = normalizeVersion(latestManifest.version);
-
-        console.log(currentVersion, latestVersion, isVersionNewer(latestVersion, currentVersion));
+        const latestVersion = normalizeVersion(latestRelease.tag_name);
 
         if (isVersionNewer(latestVersion, currentVersion)) {
-            showUpdateBanner(currentVersion, latestVersion);
+            showUpdateBanner(currentVersion, latestVersion, latestRelease.html_url);
         }
     } catch (err) {
         console.info('Update check skipped:', err);
     }
 }
 
-function getLatestManifest() {
+function getLatestRelease() {
     return new Promise((resolve, reject) => {
-        chrome.storage.local.get({ latestManifestCache: null }, async ({ latestManifestCache }) => {
+        chrome.storage.local.get({ latestReleaseCache: null }, async ({ latestReleaseCache }) => {
             const now = Date.now();
 
             if (
-                latestManifestCache?.checkedAt &&
-                latestManifestCache?.manifest &&
-                now - latestManifestCache.checkedAt < UPDATE_CHECK_INTERVAL_MS
+                latestReleaseCache?.checkedAt &&
+                latestReleaseCache?.release &&
+                now - latestReleaseCache.checkedAt < UPDATE_CHECK_INTERVAL_MS
             ) {
-                resolve(latestManifestCache.manifest);
+                resolve(latestReleaseCache.release);
                 return;
             }
 
             try {
-                const response = await fetch(GITHUB_MAIN_MANIFEST_API_URL, {
+                const response = await fetch(GITHUB_LATEST_RELEASE_API_URL, {
                     headers: { Accept: 'application/vnd.github+json' }
                 });
 
                 if (!response.ok) throw new Error(`GitHub API returned ${response.status}`);
 
-                const file = await response.json();
-                const manifest = JSON.parse(decodeBase64(file.content || ''));
+                const release = await response.json();
+                if (!release.tag_name || !release.html_url) {
+                    throw new Error('GitHub latest release response is missing tag_name or html_url');
+                }
+
                 chrome.storage.local.set({
-                    latestManifestCache: {
+                    latestReleaseCache: {
                         checkedAt: now,
-                        manifest
+                        release: {
+                            tag_name: release.tag_name,
+                            html_url: release.html_url
+                        }
                     }
                 });
-                resolve(manifest);
+                resolve(release);
             } catch (err) {
                 reject(err);
             }
@@ -456,7 +460,7 @@ function getLatestManifest() {
     });
 }
 
-function showUpdateBanner(currentVersion, latestVersion) {
+function showUpdateBanner(currentVersion, latestVersion, releaseUrl) {
     const banner = document.getElementById('updateBanner');
     const text = document.getElementById('updateBannerText');
     const link = document.getElementById('updateBannerLink');
@@ -464,16 +468,9 @@ function showUpdateBanner(currentVersion, latestVersion) {
     if (!banner || !text || !link) return;
 
     text.textContent = `Nouvelle version disponible: ${latestVersion} (installée: ${currentVersion})`;
-    link.href = `https://github.com/${GITHUB_REPOSITORY}`;
+    link.href = releaseUrl;
     banner.hidden = false;
     banner.classList.add('show');
-}
-
-function decodeBase64(value) {
-    const cleanValue = String(value).replace(/\s/g, '');
-    return decodeURIComponent(
-        Array.from(atob(cleanValue), char => `%${char.charCodeAt(0).toString(16).padStart(2, '0')}`).join('')
-    );
 }
 
 function normalizeVersion(version) {
