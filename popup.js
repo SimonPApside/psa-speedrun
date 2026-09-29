@@ -8,6 +8,8 @@ const DAY_BY_YEAR = 365;
 const GITHUB_REPOSITORY = 'SimonPApside/psa-speedrun';
 const GITHUB_LATEST_RELEASE_API_URL = `https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest`;
 const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
+const DEFAULT_PROFILE_ICON = '👤';
+const PROFILE_ICONS = new Set(['👤', '💼', '🏠', '🚲', '⭐', '🎯', '🌴', '📚']);
 
 // Populated at startup from config.json (transportOptions with green:true)
 let greenTransportValues = new Set();
@@ -242,6 +244,8 @@ function buildDefaultStorage() {
 function setProfile(profileId, storageItems) {
     const profileSelect = document.getElementById('activeProfileSelect');
     if (profileSelect) profileSelect.value = profileId;
+    const profileIcon = document.getElementById('profileIcon');
+    if (profileIcon) profileIcon.disabled = profileId === 'custom';
     updateFooterVisibility(profileId);
 
     if (profileId === 'custom') {
@@ -544,13 +548,15 @@ function updateProfileSelectVisuals(savedProfiles) {
     const p1 = select.querySelector('option[value="profile1"]');
     if (p1) {
         const name = savedProfiles.profile1?.profileName || 'Profil 1';
-        p1.textContent = `👤 ${name}${savedProfiles.profile1 ? '' : ' (Vide)'}`;
+        const icon = savedProfiles.profile1?.profileIcon || DEFAULT_PROFILE_ICON;
+        p1.textContent = `${icon} ${name}${savedProfiles.profile1 ? '' : ' (Vide)'}`;
     }
 
     const p2 = select.querySelector('option[value="profile2"]');
     if (p2) {
         const name = savedProfiles.profile2?.profileName || 'Profil 2';
-        p2.textContent = `👤 ${name}${savedProfiles.profile2 ? '' : ' (Vide)'}`;
+        const icon = savedProfiles.profile2?.profileIcon || DEFAULT_PROFILE_ICON;
+        p2.textContent = `${icon} ${name}${savedProfiles.profile2 ? '' : ' (Vide)'}`;
     }
 }
 
@@ -561,10 +567,15 @@ function updateProfileSelectVisuals(savedProfiles) {
 function loadConfigIntoForm(config) {
     if (!config) return;
 
+    // Older saved profiles have no icon field; preserve their original person icon.
+    const profileIcon = document.getElementById('profileIcon');
+    console.log(config);
+    if (profileIcon) profileIcon.value = getProfileIcon(config.profileIcon);
+
     // Standard fields
     Object.entries(config).forEach(([key, value]) => {
         const el = document.getElementById(key);
-        if (el) el.value = value;
+        if (el) el.value = key === 'profileIcon' ? getProfileIcon(value) : value;
     });
 
     // Reminder fields (loaded from global storage, not profile-specific)
@@ -607,7 +618,7 @@ function getFormConfig() {
         if (activitySelect) syncStoredFieldsFromActivity(day, activitySelect.value);
     });
 
-    const fields = [...Object.keys(DEFAULT_CONFIG), 'profileName'];
+    const fields = [...Object.keys(DEFAULT_CONFIG)];
     fields.forEach(key => {
         const el = document.getElementById(key);
         if (el) config[key] = el.type === 'number' ? parseFloat(el.value) : el.value;
@@ -624,6 +635,10 @@ function getFormConfig() {
     });
 
     return config;
+}
+
+function getProfileIcon(icon) {
+    return PROFILE_ICONS.has(icon) ? icon : DEFAULT_PROFILE_ICON;
 }
 
 function populateSelectOptions(config) {
