@@ -12,8 +12,8 @@ const contentScriptStatus = {};
 // ============================================================
 
 chrome.runtime.onInstalled.addListener(() => {
-  // Create alarm to check every hour
-  chrome.alarms.create('checkReminder', { periodInMinutes: 60 });
+  // Check frequently so reminders appear close to the selected time.
+  chrome.alarms.create('checkReminder', { periodInMinutes: 5 });
   enableSidePanelAction();
 });
 
@@ -220,7 +220,15 @@ async function checkAndNotify() {
     if (diffDays < 6) return; // Already filled for this period
   }
 
-  createNotification("psa-fill", "🚀 C'est l'heure de ta saisie PSA !");
+  // Keep reminders at most hourly while checking more often for the first
+  // notification after the configured time.
+  const { lastReminderAt = 0 } = await chrome.storage.local.get(['lastReminderAt']);
+  if (now.getTime() - lastReminderAt < 60 * 60 * 1000) return;
+
+  const notificationId = await createNotification("psa-fill", "C'est l'heure de ta saisie PSA !");
+  if (notificationId) {
+    await chrome.storage.local.set({ lastReminderAt: now.getTime() });
+  }
 }
 
 function parseFrenchDate(dateStr) {
