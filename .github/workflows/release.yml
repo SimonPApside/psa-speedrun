@@ -53,3 +53,10 @@ jobs:
 
           git commit -m "chore: update extension version to $VERSION"
           git push
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: v${{ inputs.version }}
+          name: v${{ inputs.version }}
+          generate_release_notes: true
