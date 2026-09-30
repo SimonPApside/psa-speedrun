@@ -7,9 +7,8 @@ const DEFAULT_ACTIVITY = 'PROJET';
 
 /**
  * Fills project hour inputs for Mon–Fri using the following priority per day:
- *  0. Bank holiday → fill the holiday row and skip to next day.
- *  1. Extra is set → fill the extra row and skip to next day.
- *  2. Project code is set → find/claim/create a matching project row and fill.
+ *  1. Bank holiday → fill the holiday row and skip to next day.
+ *  2. Divide remaining daily hours equally among configured activities.
  *
  * @param {Array} holidays - Array of holiday objects { name, date } from background.js.
  */
@@ -17,11 +16,8 @@ async function fillInputs(holidays = []) {
   const { currentConfig: settings } = await chrome.storage.sync.get({
     currentConfig: {
       workHours: 8,
-      monday: 'NA', mondayExtra: 'NONE', mondayProject: '',
-      tuesday: 'NA', tuesdayExtra: 'NONE', tuesdayProject: '',
-      wednesday: 'NA', wednesdayExtra: 'NONE', wednesdayProject: '',
-      thursday: 'NA', thursdayExtra: 'NONE', thursdayProject: '',
-      friday: 'NA', fridayExtra: 'NONE', fridayProject: ''
+      mondayActivities: [], tuesdayActivities: [], wednesdayActivities: [],
+      thursdayActivities: [], fridayActivities: []
     }
   });
 
@@ -52,24 +48,43 @@ async function fillInputs(holidays = []) {
       continue;
     }
 
-    const extraRowId = settings[dayKey + 'Extra'];
-    if (extraRowId && extraRowId !== 'NONE') {
-      const extraEntry = config.extraInputOptions.find(o => o.value === extraRowId);
-      const row = resolveRowByLabel(doc, extraRowId, extraEntry?.label ?? extraRowId, extraEntry);
-      const input = row?.querySelector(`input[name^="POL_TIME${i + 2}$"]`);
-      if (input) setIfEmpty(input, effectiveHoursValue);
-      continue;
-    }
+    const activities = getActivitiesForDay(settings, dayKey);
+    if (!activities.length) continue;
 
-    const projectCode = settings[dayKey + 'Project'];
-    if (projectCode) {
-      const targetRow = await getOrCreateProjectRow(doc, projectCode);
-      if (targetRow) {
-        const ti = targetRow.querySelectorAll('input[name^="TIME"]')[i + 1];
-        if (ti) setIfEmpty(ti, effectiveHoursValue);
+    const targets = [];
+    for (const activity of activities) {
+      if (activity.type === 'project' && activity.code) {
+        const row = await getOrCreateProjectRow(doc, activity.code);
+        const input = row?.querySelectorAll('input[name^="TIME"]')[i + 1];
+        if (input) targets.push(input);
+      } else if (activity.type === 'extra' && activity.code && activity.code !== 'NONE') {
+        const extraEntry = config.extraInputOptions.find(o => o.value === activity.code);
+        const row = resolveRowByLabel(doc, activity.code, extraEntry?.label ?? activity.code, extraEntry);
+        const input = row?.querySelector(`input[name^="POL_TIME${i + 2}$"]`);
+        if (input) targets.push(input);
       }
     }
+
+    const emptyTargets = targets.filter(input => !input.value);
+    if (emptyTargets.length) {
+      const share = Math.floor((remaining / emptyTargets.length) * 100) / 100;
+      let allocated = 0;
+      emptyTargets.forEach((input, index) => {
+        const amount = index === emptyTargets.length - 1
+          ? Math.round((remaining - allocated) * 100) / 100 : share;
+        allocated += amount;
+        setIfEmpty(input, String(amount).replace('.', ','));
+      });
+    }
   }
+}
+
+function getActivitiesForDay(settings, day) {
+  const activities = settings[`${day}Activities`];
+  if (Array.isArray(activities)) return activities;
+  if (settings[`${day}Project`]) return [{ type: 'project', code: settings[`${day}Project`] }];
+  const extra = settings[`${day}Extra`];
+  return extra && extra !== 'NONE' ? [{ type: 'extra', code: extra }] : [];
 }
 
 /**

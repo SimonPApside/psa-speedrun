@@ -260,7 +260,7 @@
         .weekday-grid {
             border: 1px solid var(--border);
             border-radius: 8px;
-            overflow: hidden;
+            overflow: visible;
             background: white;
         }
 
@@ -286,6 +286,16 @@
 
         .weekday-row.header>div:nth-child(4) {
             display: none;
+        }
+
+        .weekday-row.header div {
+            padding-left: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .weekday-row.header div:not(:first-child) {
+            border-left: 1px solid var(--border) !important;
         }
 
         .day-label {
@@ -354,6 +364,76 @@
 
         .activity-select.activity-placeholder {
             color: var(--text-muted);
+        }
+
+        .activity-select {
+            display: none;
+        }
+
+        .activity-picker {
+            position: relative;
+            min-width: 0;
+        }
+
+        .activity-picker[open] {
+            z-index: 30;
+        }
+
+        .activity-picker summary {
+            list-style: none;
+            cursor: pointer;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            border-left: 1px solid var(--border);
+            padding: 7px 22px 7px 8px;
+            font-size: 0.78rem;
+            position: relative;
+        }
+
+        .activity-picker summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .activity-picker summary::after {
+            content: '⌄';
+            position: absolute;
+            right: 7px;
+        }
+
+        .activity-picker[open] summary {
+            color: var(--primary);
+        }
+
+        .activity-picker-menu {
+            position: absolute;
+            z-index: 20;
+            top: 100%;
+            left: 0;
+            width: max(100%, 230px);
+            max-height: 240px;
+            overflow-y: auto;
+            padding: 6px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.18);
+        }
+
+        .activity-picker-group-title {
+            padding: 6px 5px 3px;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .activity-picker-option {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 5px;
+            font-size: 0.78rem;
+            cursor: pointer;
         }
 
         /* Status Messages */
@@ -853,6 +933,20 @@
             <a id="updateBannerLink" href="#" target="_blank" rel="noopener noreferrer">Voir</a>
         </div>
 
+
+
+        <!-- Compact Control Bar -->
+        <div class="controls-bar">
+            <div class="profile-select-wrapper">
+                <select id="activeProfileSelect" title="Choisir un profil">
+                    <option value="profile1">Profil 1</option>
+                    <option value="profile2">Profil 2</option>
+                    <option value="custom">📝 Personnalisé</option>
+                </select>
+            </div>
+            <button id="fillFormButton" class="btn-fill" title="Remplir le formulaire PSA">Remplir</button>
+        </div>
+
         <!-- Bicycle Badge -->
         <div class="bike-badge">
             <div class="bike-badge-icon">🚲</div>
@@ -874,18 +968,6 @@
             </div>
         </div>
 
-        <!-- Compact Control Bar -->
-        <div class="controls-bar">
-            <div class="profile-select-wrapper">
-                <select id="activeProfileSelect" title="Choisir un profil">
-                    <option value="profile1">Profil 1</option>
-                    <option value="profile2">Profil 2</option>
-                    <option value="custom">📝 Personnalisé</option>
-                </select>
-            </div>
-            <button id="fillFormButton" class="btn-fill" title="Remplir le formulaire PSA">Remplir</button>
-        </div>
-
         <!-- Configuration Accordion -->
         <div id="configAccordion" class="config-accordion">
             <div class="config-content">
@@ -896,27 +978,16 @@
                             <label for="profileName">Nom du profil</label>
                             <div class="form-group form-group-row">
                                 <select id="profileIcon" class="profile-icon-select" name="profileIcon"
-                                    title="Icône du profil" aria-label="Icône du profil">
-                                    <option value="👤">👤</option>
-                                    <option value="💼">💼</option>
-                                    <option value="🏠">🏠</option>
-                                    <option value="🚲">🚲</option>
-                                    <option value="⭐">⭐</option>
-                                    <option value="🎯">🎯</option>
-                                    <option value="🌴">🌴</option>
-                                    <option value="📚">📚</option>
-                                </select>
+                                    title="Icône du profil" aria-label="Icône du profil"></select>
                                 <input type="text" id="profileName" name="profileName" placeholder="Mon Profil">
                             </div>
                         </div>
                         <div class="form-group form-group-row" style="gap: 20px;">
                             <div class="form-group">
                                 <label for="workHours">Heures / jour</label>
-                                <input type="number" id="workHours" name="workHours" min="1" max="24" step="0.1"
-                                    placeholder="8" list="contractualHoursList" required>
-                                <datalist id="contractualHoursList"></datalist>
+                                <select id="workHours" name="workHours" required></select>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" style="width: 10rem;">
                                 <label for="restTime">Pause Déj</label>
                                 <select id="restTime" name="restTime" required></select>
                             </div>
@@ -927,9 +998,9 @@
                     <div class="section-title">Planning Hebdomadaire</div>
                     <div class="weekday-grid">
                         <div class="weekday-row header">
-                            <div class="day-label">Jour</div>
+                            <div>Jour</div>
                             <div>Transport</div>
-                            <div>📁 Projet / ✨ Extra
+                            <div>Activités
                                 <button id="refreshProjectsBtn" type="button" class="icon-btn"
                                     title="Rechercher les codes projet sur PSA">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -962,11 +1033,11 @@
                                     <span>PM</span>
                                 </div>
                             </div>
-                            <select id="mondayActivity" class="activity-select" title="Activite"></select>
-                            <input type="text" id="mondayProject" name="mondayProject" class="planning-field-hidden"
-                                placeholder="PROJ-001" title="Code Projet" list="projectCodesList">
-                            <select id="mondayExtra" name="mondayExtra" class="planning-field-hidden"
-                                title="Extra"></select>
+                            <details class="activity-picker">
+                                <summary id="mondayActivityLabel">Choisir…</summary>
+                                <div id="mondayActivityMenu" class="activity-picker-menu"></div><select
+                                    id="mondayActivity" class="activity-select" multiple></select>
+                            </details>
                         </div>
 
                         <!-- Tuesday -->
@@ -989,10 +1060,11 @@
                                     <span>PM</span>
                                 </div>
                             </div>
-                            <select id="tuesdayActivity" class="activity-select" title="Activite"></select>
-                            <input type="text" id="tuesdayProject" name="tuesdayProject" class="planning-field-hidden"
-                                placeholder="PROJ-001" title="Code Projet" list="projectCodesList">
-                            <select id="tuesdayExtra" name="tuesdayExtra" class="planning-field-hidden"></select>
+                            <details class="activity-picker">
+                                <summary id="tuesdayActivityLabel">Choisir…</summary>
+                                <div id="tuesdayActivityMenu" class="activity-picker-menu"></div><select
+                                    id="tuesdayActivity" class="activity-select" multiple></select>
+                            </details>
                         </div>
 
                         <!-- Wednesday -->
@@ -1015,11 +1087,11 @@
                                     <span>PM</span>
                                 </div>
                             </div>
-                            <select id="wednesdayActivity" class="activity-select" title="Activite"></select>
-                            <input type="text" id="wednesdayProject" name="wednesdayProject"
-                                class="planning-field-hidden" placeholder="PROJ-001" title="Code Projet"
-                                list="projectCodesList">
-                            <select id="wednesdayExtra" name="wednesdayExtra" class="planning-field-hidden"></select>
+                            <details class="activity-picker">
+                                <summary id="wednesdayActivityLabel">Choisir…</summary>
+                                <div id="wednesdayActivityMenu" class="activity-picker-menu"></div><select
+                                    id="wednesdayActivity" class="activity-select" multiple></select>
+                            </details>
                         </div>
 
                         <!-- Thursday -->
@@ -1042,10 +1114,11 @@
                                     <span>PM</span>
                                 </div>
                             </div>
-                            <select id="thursdayActivity" class="activity-select" title="Activite"></select>
-                            <input type="text" id="thursdayProject" name="thursdayProject" class="planning-field-hidden"
-                                placeholder="PROJ-001" title="Code Projet" list="projectCodesList">
-                            <select id="thursdayExtra" name="thursdayExtra" class="planning-field-hidden"></select>
+                            <details class="activity-picker">
+                                <summary id="thursdayActivityLabel">Choisir…</summary>
+                                <div id="thursdayActivityMenu" class="activity-picker-menu"></div><select
+                                    id="thursdayActivity" class="activity-select" multiple></select>
+                            </details>
                         </div>
 
                         <!-- Friday -->
@@ -1068,10 +1141,11 @@
                                     <span>PM</span>
                                 </div>
                             </div>
-                            <select id="fridayActivity" class="activity-select" title="Activite"></select>
-                            <input type="text" id="fridayProject" name="fridayProject" class="planning-field-hidden"
-                                placeholder="PROJ-001" title="Code Projet" list="projectCodesList">
-                            <select id="fridayExtra" name="fridayExtra" class="planning-field-hidden"></select>
+                            <details class="activity-picker">
+                                <summary id="fridayActivityLabel">Choisir…</summary>
+                                <div id="fridayActivityMenu" class="activity-picker-menu"></div><select
+                                    id="fridayActivity" class="activity-select" multiple></select>
+                            </details>
                         </div>
                     </div>
 

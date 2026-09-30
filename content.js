@@ -152,22 +152,18 @@ async function scrapeProjectCodes(force = false) {
     return false;
   }
 
-  if (codes.length > 0) {
-    await chrome.storage.local.set({
-      projectCodes: codes,
-      lastProjectScrape: currentMonth
+  await chrome.storage.local.set({
+    projectCodes: codes,
+    lastProjectScrape: currentMonth
+  });
+
+  // Attempt to close the popup via injected script
+  const cancelBtn = document.querySelector('.ps_modal_close .ps-button');
+  if (cancelBtn) {
+    injectCode(chrome.runtime.getURL('resources/triggerClickFunction.js'), {
+      targetId: cancelBtn.id
     });
-
-    // Attempt to close the popup via injected script
-    const cancelBtn = document.querySelector('.ps_modal_close .ps-button');
-    if (cancelBtn) {
-      injectCode(chrome.runtime.getURL('resources/triggerClickFunction.js'), {
-        targetId: cancelBtn.id
-      });
-    }
-
-    return true;
   }
 
-  return false;
+  return true;
 }
