@@ -1,4 +1,5 @@
 {
+    "profileIcons": ["👤", "💼", "🏠", "🚲", "⭐", "🎯", "🌴", "📚"],
     "publicHoliday": {
         "label": "Jour férié",
         "value": "trEX_TRC_MAP_VW$0_row29"
