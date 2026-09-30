@@ -85,20 +85,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     const fillBtn = document.getElementById('fillFormButton');
     if (fillBtn) fillBtn.addEventListener('click', fillForm);
 
-    // 7. Strikethrough listeners for Extra selects
+    // 7. Activity selector listeners
     DAYS.forEach(day => {
-        const extraEl = document.getElementById(`${day}Extra`);
-        if (extraEl) {
-            extraEl.addEventListener('change', (e) => {
-                updateStrikethrough(day, e.target.value);
-            });
-        }
         const activityEl = document.getElementById(`${day}Activity`);
         if (activityEl) {
-            activityEl.addEventListener('change', (e) => {
-                syncStoredFieldsFromActivity(day, e.target.value);
+            activityEl.addEventListener('change', () => updateStrikethrough(day));
+        }
+        const activityMenu = document.getElementById(`${day}ActivityMenu`);
+        if (activityMenu) {
+            activityMenu.addEventListener('change', (event) => {
+                const checkbox = event.target.closest('input[type="checkbox"]');
+                if (!checkbox) return;
+                const option = Array.from(activityEl.options).find(item => item.value === checkbox.value);
+                if (option) option.selected = checkbox.checked;
+                updateActivityPicker(day);
+                updateStrikethrough(day);
             });
         }
+        const activityPicker = document.querySelector(`#${day}Activity`)?.closest('.activity-picker');
+        if (activityPicker) {
+            activityPicker.addEventListener('toggle', () => {
+                if (activityPicker.open) positionActivityPicker(activityPicker);
+            });
+        }
+    });
+
+    document.addEventListener('click', (event) => {
+        if (event.target.closest('.activity-picker')) return;
+        document.querySelectorAll('.activity-picker[open]').forEach(picker => {
+            picker.removeAttribute('open');
+        });
     });
 
     // 8. Bicycle badge: load count & register reset
@@ -567,6 +583,8 @@ function updateProfileSelectVisuals(savedProfiles) {
 function loadConfigIntoForm(config) {
     if (!config) return;
 
+    config = normalizeActivitiesConfig(config);
+
     // Older saved profiles have no icon field; preserve their original person icon.
     const profileIcon = document.getElementById('profileIcon');
     console.log(config);
@@ -594,18 +612,29 @@ function loadConfigIntoForm(config) {
         }
     });
 
-    // Apply strikethrough on load
-    DAYS.forEach(day => {
-        const extraVal = config[`${day}Extra`];
-        syncActivitySelectFromStored(day);
-        updateStrikethrough(day, extraVal);
-    });
+    DAYS.forEach(day => syncActivitySelectFromStored(day, config[`${day}Activities`]));
 }
 
-function updateStrikethrough(day, extraValue) {
+function normalizeActivitiesConfig(config) {
+    const normalized = { ...config };
+    DAYS.forEach(day => {
+        if (!Array.isArray(normalized[`${day}Activities`])) {
+            const project = normalized[`${day}Project`];
+            const extra = normalized[`${day}Extra`];
+            normalized[`${day}Activities`] = project
+                ? [{ type: 'project', code: project }]
+                : extra && extra !== 'NONE' ? [{ type: 'extra', code: extra }] : [];
+        }
+        delete normalized[`${day}Project`];
+        delete normalized[`${day}Extra`];
+    });
+    return normalized;
+}
+
+function updateStrikethrough(day) {
     const activitySelect = document.getElementById(`${day}Activity`);
     if (activitySelect) {
-        const hasExtra = extraValue && extraValue !== 'NONE';
+        const hasExtra = Array.from(activitySelect.selectedOptions).some(option => option.value.startsWith('extra:'));
         activitySelect.classList.toggle('activity-extra', hasExtra);
         activitySelect.classList.toggle('activity-placeholder', !activitySelect.value);
     }
@@ -613,15 +642,19 @@ function updateStrikethrough(day, extraValue) {
 
 function getFormConfig() {
     const config = {};
-    DAYS.forEach(day => {
-        const activitySelect = document.getElementById(`${day}Activity`);
-        if (activitySelect) syncStoredFieldsFromActivity(day, activitySelect.value);
-    });
-
     const fields = [...Object.keys(DEFAULT_CONFIG)];
     fields.forEach(key => {
-        const el = document.getElementById(key);
-        if (el) config[key] = el.type === 'number' ? parseFloat(el.value) : el.value;
+        const activitiesDay = DAYS.find(day => key === `${day}Activities`);
+        const el = document.getElementById(activitiesDay ? `${activitiesDay}Activity` : key);
+        if (!el) return;
+        if (DAYS.some(day => key === `${day}Activities`)) {
+            config[key] = Array.from(el.selectedOptions, option => {
+                const [type, ...parts] = option.value.split(':');
+                return { type, code: parts.join(':') };
+            });
+        } else {
+            config[key] = el.type === 'number' ? parseFloat(el.value) : el.value;
+        }
     });
 
     // Save reminder settings globally
@@ -653,7 +686,6 @@ function populateSelectOptions(config) {
     }
     if (config.extraInputOptions) {
         extraInputOptions = config.extraInputOptions;
-        DAYS.forEach(day => populateSelect(day + 'Extra', config.extraInputOptions));
         populateActivitySelects();
     }
 }
@@ -685,7 +717,6 @@ function populateProjectDatalist(codes) {
 function populateActivitySelects() {
     DAYS.forEach(day => {
         const select = document.getElementById(`${day}Activity`);
-        const currentProject = document.getElementById(`${day}Project`)?.value;
         if (!select) return;
 
         select.innerHTML = '';
@@ -697,7 +728,7 @@ function populateActivitySelects() {
 
         const projectCodes = [...new Set([
             ...projectCodesCache,
-            ...(currentProject ? [currentProject] : [])
+            ...(select.dataset.savedProjects ? JSON.parse(select.dataset.savedProjects) : [])
         ])].sort();
 
         projectCodes.forEach(code => {
@@ -721,47 +752,94 @@ function populateActivitySelects() {
 
         select.appendChild(projectGroup);
         select.appendChild(extraGroup);
-
-        syncActivitySelectFromStored(day);
+        syncActivitySelectFromStored(day, select.dataset.savedActivities
+            ? JSON.parse(select.dataset.savedActivities) : []);
+        buildActivityPickerMenu(day);
     });
 }
 
-function syncActivitySelectFromStored(day) {
+function buildActivityPickerMenu(day) {
     const select = document.getElementById(`${day}Activity`);
-    const projectInput = document.getElementById(`${day}Project`);
-    const extraSelect = document.getElementById(`${day}Extra`);
-    if (!select || !projectInput || !extraSelect) return;
-
-    const value = projectInput.value
-        ? `project:${projectInput.value}`
-        : `extra:${extraSelect.value || 'NONE'}`;
-
-    const hasMatchingOption = Array.from(select.options).some(option => option.value === value);
-    if (hasMatchingOption) {
-        select.value = value;
-    } else {
-        select.selectedIndex = -1;
-    }
-    updateStrikethrough(day, extraSelect.value);
+    const menu = document.getElementById(`${day}ActivityMenu`);
+    if (!select || !menu) return;
+    menu.innerHTML = '';
+    Array.from(select.querySelectorAll('optgroup')).forEach(group => {
+        const heading = document.createElement('div');
+        heading.className = 'activity-picker-group-title';
+        heading.textContent = group.label;
+        menu.appendChild(heading);
+        group.querySelectorAll('option').forEach(option => {
+            const label = document.createElement('label');
+            label.className = 'activity-picker-option';
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = option.value;
+            const text = document.createElement('span');
+            text.textContent = option.textContent;
+            label.append(checkbox, text);
+            menu.appendChild(label);
+        });
+    });
+    updateActivityPicker(day);
 }
 
-function syncStoredFieldsFromActivity(day, activityValue) {
-    const projectInput = document.getElementById(`${day}Project`);
-    const extraSelect = document.getElementById(`${day}Extra`);
-    if (!projectInput || !extraSelect) return;
+function updateActivityPicker(day) {
+    const select = document.getElementById(`${day}Activity`);
+    const label = document.getElementById(`${day}ActivityLabel`);
+    const menu = document.getElementById(`${day}ActivityMenu`);
+    if (!select || !label || !menu) return;
+    const selected = Array.from(select.selectedOptions);
+    label.textContent = selected.length > 1
+        ? `${selected.length} activités`
+        : selected.length === 1 ? selected[0].textContent : 'Choisir…';
+    label.title = selected.map(option => option.textContent).join(', ');
+    menu.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = selected.some(option => option.value === checkbox.value);
+    });
+}
 
-    if (!activityValue) {
-        projectInput.value = '';
-        extraSelect.value = 'NONE';
-    } else if (activityValue.startsWith('project:')) {
-        projectInput.value = activityValue.slice('project:'.length);
-        extraSelect.value = 'NONE';
-    } else if (activityValue.startsWith('extra:')) {
-        projectInput.value = '';
-        extraSelect.value = activityValue.slice('extra:'.length);
-    }
+function positionActivityPicker(picker) {
+    const menu = picker.querySelector('.activity-picker-menu');
+    const summary = picker.querySelector('summary');
+    if (!menu || !summary) return;
 
-    updateStrikethrough(day, extraSelect.value);
+    const margin = 8;
+    const width = Math.max(1, Math.min(300, window.innerWidth - margin * 2));
+    const bounds = summary.getBoundingClientRect();
+    const left = Math.min(
+        Math.max(bounds.left, margin),
+        window.innerWidth - width - margin
+    );
+    const menuHeight = Math.min(240, window.innerHeight - margin * 2);
+    const top = bounds.bottom + menuHeight > window.innerHeight - margin
+        ? Math.max(margin, bounds.top - menuHeight) : bounds.bottom;
+    menu.style.position = 'fixed';
+    menu.style.width = `${width}px`;
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
+}
+
+function syncActivitySelectFromStored(day, activities) {
+    const select = document.getElementById(`${day}Activity`);
+    if (!select) return;
+    const selected = activities || [];
+    const projects = selected.filter(item => item.type === 'project').map(item => item.code);
+    select.dataset.savedProjects = JSON.stringify(projects);
+    select.dataset.savedActivities = JSON.stringify(selected);
+    const projectGroup = Array.from(select.querySelectorAll('optgroup')).find(group => group.label === '📁 Projets');
+    projects.forEach(code => {
+        const value = `project:${code}`;
+        if (projectGroup && !Array.from(select.options).some(option => option.value === value)) {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = code;
+            projectGroup.appendChild(option);
+        }
+    });
+    const selectedValues = new Set(selected.map(item => `${item.type}:${item.code}`));
+    Array.from(select.options).forEach(option => { option.selected = selectedValues.has(option.value); });
+    updateActivityPicker(day);
+    updateStrikethrough(day);
 }
 
 function populateDatalist(datalistId, items) {

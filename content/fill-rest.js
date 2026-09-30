@@ -13,8 +13,8 @@ function fillInputsRest(holidays = [], onDone) {
       currentConfig: {
         restTime: 1,
         monday: 'NA', tuesday: 'NA', wednesday: 'NA', thursday: 'NA', friday: 'NA',
-        mondayExtra: 'NONE', tuesdayExtra: 'NONE', wednesdayExtra: 'NONE',
-        thursdayExtra: 'NONE', fridayExtra: 'NONE'
+        mondayActivities: [], tuesdayActivities: [], wednesdayActivities: [],
+        thursdayActivities: [], fridayActivities: []
       }
     });
 
@@ -30,10 +30,15 @@ function fillInputsRest(holidays = [], onDone) {
       if (isDayHoliday(periodEndDate, holidayDates, i)) return true;
 
       // 2. Skip if it's an absence type flagged to skip (e.g., Vacation/RTT)
-      const extraId = settings[day + 'Extra'];
-      if (!extraId || extraId === 'NONE') return false;
-      const option = config.extraInputOptions.find(o => o.value === extraId);
-      return option?.skipRestAndLocation === true;
+      const activities = Array.isArray(settings[`${day}Activities`])
+        ? settings[`${day}Activities`]
+        : settings[`${day}Extra`] && settings[`${day}Extra`] !== 'NONE'
+          ? [{ type: 'extra', code: settings[`${day}Extra`] }] : [];
+      return activities.some(activity => {
+        if (activity.type !== 'extra') return false;
+        const option = config.extraInputOptions.find(o => o.value === activity.code);
+        return option?.skipRestAndLocation === true;
+      });
     });
 
     fillRestCheckboxes(doc, skipDay);

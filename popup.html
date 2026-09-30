@@ -260,7 +260,7 @@
         .weekday-grid {
             border: 1px solid var(--border);
             border-radius: 8px;
-            overflow: hidden;
+            overflow: visible;
             background: white;
         }
 
@@ -354,6 +354,76 @@
 
         .activity-select.activity-placeholder {
             color: var(--text-muted);
+        }
+
+        .activity-select {
+            display: none;
+        }
+
+        .activity-picker {
+            position: relative;
+            min-width: 0;
+        }
+
+        .activity-picker[open] {
+            z-index: 30;
+        }
+
+        .activity-picker summary {
+            list-style: none;
+            cursor: pointer;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            border-left: 1px solid var(--border);
+            padding: 7px 22px 7px 8px;
+            font-size: 0.78rem;
+            position: relative;
+        }
+
+        .activity-picker summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .activity-picker summary::after {
+            content: '⌄';
+            position: absolute;
+            right: 7px;
+        }
+
+        .activity-picker[open] summary {
+            color: var(--primary);
+        }
+
+        .activity-picker-menu {
+            position: absolute;
+            z-index: 20;
+            top: 100%;
+            left: 0;
+            width: max(100%, 230px);
+            max-height: 240px;
+            overflow-y: auto;
+            padding: 6px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.18);
+        }
+
+        .activity-picker-group-title {
+            padding: 6px 5px 3px;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .activity-picker-option {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 5px;
+            font-size: 0.78rem;
+            cursor: pointer;
         }
 
         /* Status Messages */
@@ -929,7 +999,7 @@
                         <div class="weekday-row header">
                             <div class="day-label">Jour</div>
                             <div>Transport</div>
-                            <div>📁 Projet / ✨ Extra
+                            <div>Activités
                                 <button id="refreshProjectsBtn" type="button" class="icon-btn"
                                     title="Rechercher les codes projet sur PSA">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -962,11 +1032,11 @@
                                     <span>PM</span>
                                 </div>
                             </div>
-                            <select id="mondayActivity" class="activity-select" title="Activite"></select>
-                            <input type="text" id="mondayProject" name="mondayProject" class="planning-field-hidden"
-                                placeholder="PROJ-001" title="Code Projet" list="projectCodesList">
-                            <select id="mondayExtra" name="mondayExtra" class="planning-field-hidden"
-                                title="Extra"></select>
+                            <details class="activity-picker">
+                                <summary id="mondayActivityLabel">Choisir…</summary>
+                                <div id="mondayActivityMenu" class="activity-picker-menu"></div><select
+                                    id="mondayActivity" class="activity-select" multiple></select>
+                            </details>
                         </div>
 
                         <!-- Tuesday -->
@@ -989,10 +1059,11 @@
                                     <span>PM</span>
                                 </div>
                             </div>
-                            <select id="tuesdayActivity" class="activity-select" title="Activite"></select>
-                            <input type="text" id="tuesdayProject" name="tuesdayProject" class="planning-field-hidden"
-                                placeholder="PROJ-001" title="Code Projet" list="projectCodesList">
-                            <select id="tuesdayExtra" name="tuesdayExtra" class="planning-field-hidden"></select>
+                            <details class="activity-picker">
+                                <summary id="tuesdayActivityLabel">Choisir…</summary>
+                                <div id="tuesdayActivityMenu" class="activity-picker-menu"></div><select
+                                    id="tuesdayActivity" class="activity-select" multiple></select>
+                            </details>
                         </div>
 
                         <!-- Wednesday -->
@@ -1015,11 +1086,11 @@
                                     <span>PM</span>
                                 </div>
                             </div>
-                            <select id="wednesdayActivity" class="activity-select" title="Activite"></select>
-                            <input type="text" id="wednesdayProject" name="wednesdayProject"
-                                class="planning-field-hidden" placeholder="PROJ-001" title="Code Projet"
-                                list="projectCodesList">
-                            <select id="wednesdayExtra" name="wednesdayExtra" class="planning-field-hidden"></select>
+                            <details class="activity-picker">
+                                <summary id="wednesdayActivityLabel">Choisir…</summary>
+                                <div id="wednesdayActivityMenu" class="activity-picker-menu"></div><select
+                                    id="wednesdayActivity" class="activity-select" multiple></select>
+                            </details>
                         </div>
 
                         <!-- Thursday -->
@@ -1042,10 +1113,11 @@
                                     <span>PM</span>
                                 </div>
                             </div>
-                            <select id="thursdayActivity" class="activity-select" title="Activite"></select>
-                            <input type="text" id="thursdayProject" name="thursdayProject" class="planning-field-hidden"
-                                placeholder="PROJ-001" title="Code Projet" list="projectCodesList">
-                            <select id="thursdayExtra" name="thursdayExtra" class="planning-field-hidden"></select>
+                            <details class="activity-picker">
+                                <summary id="thursdayActivityLabel">Choisir…</summary>
+                                <div id="thursdayActivityMenu" class="activity-picker-menu"></div><select
+                                    id="thursdayActivity" class="activity-select" multiple></select>
+                            </details>
                         </div>
 
                         <!-- Friday -->
@@ -1068,10 +1140,11 @@
                                     <span>PM</span>
                                 </div>
                             </div>
-                            <select id="fridayActivity" class="activity-select" title="Activite"></select>
-                            <input type="text" id="fridayProject" name="fridayProject" class="planning-field-hidden"
-                                placeholder="PROJ-001" title="Code Projet" list="projectCodesList">
-                            <select id="fridayExtra" name="fridayExtra" class="planning-field-hidden"></select>
+                            <details class="activity-picker">
+                                <summary id="fridayActivityLabel">Choisir…</summary>
+                                <div id="fridayActivityMenu" class="activity-picker-menu"></div><select
+                                    id="fridayActivity" class="activity-select" multiple></select>
+                            </details>
                         </div>
                     </div>
 
