@@ -173,11 +173,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // 9. Project codes auto-fill
-    chrome.storage.local.get({ projectCodes: [] }, (items) => {
-        projectCodesCache = items.projectCodes;
-        populateProjectDatalist(items.projectCodes);
-        populateActivitySelects();
-    });
+    await getProjetAndActivityData();
 
     const refreshProjectsBtn = document.getElementById('refreshProjectsBtn');
     if (refreshProjectsBtn) {
@@ -189,31 +185,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             flashInstruction("⏳ Recherche en cours...", "info");
-            chrome.tabs.sendMessage(tab.id, { type: 'SCRAPE_PROJECT_CODES', force: true }, (response) => {
-                if (response && response.success) {
-                    chrome.storage.local.get({ projectCodes: [] }, (items) => {
-                        projectCodesCache = items.projectCodes;
-                        populateProjectDatalist(items.projectCodes);
-                        populateActivitySelects();
-                        const availableProjects = new Set(items.projectCodes);
-                        const currentConfig = removeMissingProjects(getFormConfig(), availableProjects);
-                        chrome.storage.sync.get(buildDefaultStorage(), (stored) => {
-                            const savedProfiles = { ...stored.savedProfiles };
-                            Object.keys(savedProfiles).forEach(profileId => {
-                                if (savedProfiles[profileId]) {
-                                    savedProfiles[profileId] = removeMissingProjects(savedProfiles[profileId], availableProjects);
-                                }
-                            });
-                            chrome.storage.sync.set({ currentConfig, savedProfiles }, () => {
-                                loadConfigIntoForm(currentConfig);
-                                updateProfileSelectVisuals(savedProfiles);
-                            });
-                        });
-                        flashInstruction(`✓ ${items.projectCodes.length} codes trouvés`, "success");
-                    });
-                } else {
+            chrome.tabs.sendMessage(tab.id, { type: 'SCRAPE_PROJECT_CODES', force: true }, async (response) => {
+                if (chrome.runtime.lastError || !response?.success) {
                     flashInstruction("⚠️ Échec de la recherche", "warning");
+                    return;
                 }
+                const { projectCodes } = await getProjetAndActivityData({ removeMissing: true });
+                flashInstruction(`✓ ${projectCodes.length} codes trouvés`, "success");
             });
         });
     }
@@ -249,6 +227,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     chrome.runtime.onMessage.addListener((msg) => {
         if (msg.type === 'TABLES_DETECTED') {
             checkExtensionStatus();
+            getProjetAndActivityData();
+        } else if (msg.type === 'PROJECT_CODES_UPDATED') {
+            getProjetAndActivityData({ removeMissing: true });
         }
     });
 });
@@ -261,6 +242,31 @@ function buildDefaultStorage() {
         reminderDays: [4],
         reminderTime: '11:00'
     };
+}
+
+/** Loads the latest project list and rebuilds all project/activity controls. */
+async function getProjetAndActivityData({ removeMissing = false } = {}) {
+    const { projectCodes = [] } = await chrome.storage.local.get({ projectCodes: [] });
+    projectCodesCache = projectCodes;
+    populateProjectDatalist(projectCodes);
+    populateActivitySelects();
+
+    if (removeMissing) {
+        const availableProjects = new Set(projectCodes);
+        const currentConfig = removeMissingProjects(getFormConfig(), availableProjects);
+        const stored = await chrome.storage.sync.get(buildDefaultStorage());
+        const savedProfiles = { ...stored.savedProfiles };
+        Object.keys(savedProfiles).forEach(profileId => {
+            if (savedProfiles[profileId]) {
+                savedProfiles[profileId] = removeMissingProjects(savedProfiles[profileId], availableProjects);
+            }
+        });
+        await chrome.storage.sync.set({ currentConfig, savedProfiles });
+        loadConfigIntoForm(currentConfig);
+        updateProfileSelectVisuals(savedProfiles);
+    }
+
+    return { projectCodes, extraInputOptions };
 }
 
 // ============================================================
