@@ -90,6 +90,11 @@
             "description": "37,5h dont 2,5h structurelles"
         },
         {
+            "value": 38.5,
+            "psaTimesheet": 7.7,
+            "description": "38,5h dont 3,5h structurelles"
+        },
+        {
             "value": 39,
             "psaTimesheet": 7.8,
             "description": "39h dont 4h structurelles"
