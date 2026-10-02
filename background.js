@@ -39,6 +39,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     
     sendResponse({ success: true });
 
+  } else if (request.type === 'PROJECT_CODES_UPDATED') {
+    sendResponse({ success: true });
+
   } else if (request.type === 'TABLES_NOT_DETECTED') {
     delete contentScriptStatus[tabId];
     chrome.action.setBadgeText({ text: '', tabId });

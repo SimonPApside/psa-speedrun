@@ -4,6 +4,7 @@ const CONFIG_URL = chrome.runtime.getURL('resources/config.json');
 
 let isReady = false;
 let config;
+let projectScrapeStarted = false;
 
 (async () => {
   config = await fetch(CONFIG_URL).then(res => res.json());
@@ -18,8 +19,12 @@ let config;
       isReady = allTablesPresent;
 
       if (isReady) {
-        // Auto-scrape projects once a month
-        scrapeProjectCodes();
+        // Refresh once per page load; opening the PSA search dialog can make
+        // the table readiness check briefly switch off and back on.
+        if (!projectScrapeStarted) {
+          projectScrapeStarted = true;
+          scrapeProjectCodes(true);
+        }
 
         chrome.runtime.sendMessage({
           type: 'TABLES_DETECTED',
@@ -156,6 +161,8 @@ async function scrapeProjectCodes(force = false) {
     projectCodes: codes,
     lastProjectScrape: currentMonth
   });
+
+  chrome.runtime.sendMessage({ type: 'PROJECT_CODES_UPDATED' });
 
   // Attempt to close the popup via injected script
   const cancelBtn = document.querySelector('.ps_modal_close .ps-button');
