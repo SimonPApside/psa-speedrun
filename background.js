@@ -6,6 +6,8 @@ const PSA_DEEP_LINK = 'https://psa-fs.ent.cgi.com/psc/fsprda/EMPLOYEE/ERP/c/NUI_
 
 // Track per-tab content script readiness
 const contentScriptStatus = {};
+const sidePanelPorts = new Set();
+let sidePanelCloseTimer;
 
 // ============================================================
 // INIT & ALARMS
@@ -14,10 +16,13 @@ const contentScriptStatus = {};
 chrome.runtime.onInstalled.addListener(() => {
   // Check frequently so reminders appear close to the selected time.
   chrome.alarms.create('checkReminder', { periodInMinutes: 5 });
+  setPanelState(false);
   enableSidePanelAction();
 });
 
 chrome.runtime.onStartup.addListener(() => {
+  // A panel cannot remain open across browser restarts.
+  setPanelState(false);
   enableSidePanelAction();
 });
 
@@ -51,6 +56,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.type === 'GET_STATUS') {
     const targetTabId = request.tabId || tabId;
     sendResponse({ status: contentScriptStatus[targetTabId] || { loaded: false } });
+
+  } else if (request.type === 'GET_PANEL_STATE') {
+    chrome.storage.session.get({ panelOpen: false }).then(({ panelOpen }) => {
+      sendResponse({ open: panelOpen });
+    });
 
   } else if (request.type === 'FILL_FORM_FROM_FAB') {
     // Forward the fill request from FAB to the main content script
@@ -114,11 +124,20 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name !== 'sidepanel') return;
- 
+
+  clearTimeout(sidePanelCloseTimer);
+  sidePanelPorts.add(port);
   setPanelState(true);
- 
+
   port.onDisconnect.addListener(() => {
-    setPanelState(false);
+    sidePanelPorts.delete(port);
+    if (sidePanelPorts.size > 0) return;
+
+    // Chrome may recreate the side panel while the active tab navigates.
+    // Wait briefly so its replacement port can connect before marking it closed.
+    sidePanelCloseTimer = setTimeout(() => {
+      if (sidePanelPorts.size === 0) setPanelState(false);
+    }, 750);
   });
 });
  
@@ -127,8 +146,8 @@ function enableSidePanelAction() {
 }
 
 function setPanelState(open) {
-  chrome.storage.local.set({ panelOpen: open });
- 
+  chrome.storage.session.set({ panelOpen: open });
+
   chrome.tabs.query({}, (tabs) => {
     for (const tab of tabs) {
       chrome.tabs.sendMessage(tab.id, { type: 'PANEL_STATE_CHANGED', open })

@@ -63,7 +63,6 @@
       fab.addEventListener("animationend", () => fab.classList.remove("pop"), { once: true });
     }
 
-    chrome.storage.local.set({ panelOpen: open });
   }
 
   function setReady(ready) {
@@ -131,9 +130,10 @@
     }
   });
 
-  /* ─── Sync initial state from storage & background ───────── */
-  chrome.storage.local.get("panelOpen", ({ panelOpen }) => {
-    setOpen(!!panelOpen, { animate: false });
+  /* ─── Sync initial state from the background worker ───────── */
+  chrome.runtime.sendMessage({ type: "GET_PANEL_STATE" }, (response) => {
+    if (chrome.runtime.lastError) return;
+    setOpen(!!response?.open, { animate: false });
   });
 
   // Check if tables are already detected
@@ -143,11 +143,4 @@
     }
   });
 
-  /* ─── Watch storage changes (cross-context sync) ─────────── */
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === "local" && "panelOpen" in changes) {
-      const next = changes.panelOpen.newValue;
-      if (next !== isPanelOpen) setOpen(next, { animate: true });
-    }
-  });
 })();
