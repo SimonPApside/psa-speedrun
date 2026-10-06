@@ -229,7 +229,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             checkExtensionStatus();
             getProjetAndActivityData();
         } else if (msg.type === 'PROJECT_CODES_UPDATED') {
-            getProjetAndActivityData({ removeMissing: true });
+            // Automatic scrapes can temporarily return an incomplete list.
+            // Keep saved activities intact; only an explicit refresh prunes them.
+            getProjetAndActivityData();
         }
     });
 });
