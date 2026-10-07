@@ -25,7 +25,7 @@ async function initializeActivityBadges(configData, notify) {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         document.getElementById('activityBadges').innerHTML = await response.text();
     } catch (error) {
-        console.error('Unable to load activity badges:', error);
+        console.warn('Unable to load activity badges:', error);
         return () => {};
     }
 

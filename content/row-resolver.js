@@ -30,7 +30,7 @@ function resolveRowByLabel(doc, storedId, label) {
     if (rowContainsLabel(row, label)) return row;
   }
 
-  console.error(`[PSA Speedrun] Could not find any row matching label "${label}".`);
+  console.warn(`[PSA Speedrun] Could not find any row matching label "${label}".`);
   return null;
 }
 

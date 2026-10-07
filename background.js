@@ -73,7 +73,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     createNotification(null, request.data);
     sendResponse({ success: true });
   } else if (request.type === 'FAB_TOGGLE') {
-    console.log(request);
     const windowId = sender.tab?.windowId;
 
     if (!windowId) {
@@ -173,8 +172,6 @@ async function getJoursFeriesOfWeek(date) {
     jours = joursFeries(year);
     await chrome.storage.local.set({ [storageKey]: jours });
   }
-
-  console.log(jours);
 
   return getWeekJoursFeries(date, jours);
 }
