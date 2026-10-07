@@ -39,13 +39,11 @@ let projectScrapeStarted = false;
 })();
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log(request, sender, sendResponse);
   if (request.type === 'CHECK_STATUS') {
     sendResponse({ loaded: isReady, url: window.location.href });
 
   } else if (request.type === 'GET_PERIOD_INFO') {
-    const doc = getIframeDoc();
-    const periodEndEl = doc?.getElementById('EX_TIME_HDR_PERIOD_END_DT');
+    const periodEndEl = getEndTimePeriodElement();
     sendResponse({ periodEndDate: periodEndEl?.innerText || null });
 
   } else if (request.type === 'FILL_FORM') {
@@ -64,8 +62,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
 
       fillInputsRest(confirmedHolidays, () => {
-        const doc = getIframeDoc();
-        const periodEndEl = doc?.getElementById('EX_TIME_HDR_PERIOD_END_DT');
+        const periodEndEl = getEndTimePeriodElement();
         if (periodEndEl?.innerText) {
           chrome.storage.local.set({ saisieEffectuee: periodEndEl.innerText });
         }
@@ -93,8 +90,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
  * @returns {Promise<Array>} Confirmed holiday objects, or empty array.
  */
 async function askForHolidayConfirmation() {
-  const doc = getIframeDoc();
-  const periodEndEl = doc?.getElementById('EX_TIME_HDR_PERIOD_END_DT');
+  const periodEndEl = getEndTimePeriodElement();
   if (!periodEndEl?.innerText) return [];
 
   const periodDate = parseFrenchDate(periodEndEl.innerText);
@@ -128,12 +124,12 @@ async function scrapeProjectCodes(force = false) {
   }
 
   const doc = getIframeDoc();
-  const promptBtn = doc?.getElementById('PROJECT_CODE$prompt$0');
+  const promptBtn = doc?.querySelector(DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.projectCodePromptId));
   if (!promptBtn) return false;
 
   // Trigger the popup via injected script (PS framework security/context requirement)
   injectCode(chrome.runtime.getURL('resources/triggerClickFunction.js'), {
-    targetId: 'PROJECT_CODE$prompt$0'
+    targetSelector: DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.projectCodePromptId)
   });
 
 
@@ -142,8 +138,10 @@ async function scrapeProjectCodes(force = false) {
   try {
     codes = await new Promise(resolve => {
       const check = setInterval(() => {
-        const iframe = getIframeDoc();
-        const resultsTable = iframe.getElementById('PTSRCHRESULTS');
+        const searchDoc = getIframeDoc(PSA_DOM_ELEMENTS.searchResultsTableId);
+        const resultsTable = searchDoc.querySelector(
+          DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.searchResultsTableId)
+        );
         if (resultsTable) {
           const links = Array.from(resultsTable.querySelectorAll('tr a[id^="SEARCH_RESULT"]'));
           const foundCodes = links.map(a => a.innerText.trim()).filter(t => t.length > 0);
@@ -165,12 +163,19 @@ async function scrapeProjectCodes(force = false) {
   chrome.runtime.sendMessage({ type: 'PROJECT_CODES_UPDATED' });
 
   // Attempt to close the popup via injected script
-  const cancelBtn = document.querySelector('.ps_modal_close .ps-button');
+  const cancelBtn = document.querySelector(PSA_DOM_ELEMENTS.projectCodeModalClose)
+    || getIframeDoc(PSA_DOM_ELEMENTS.projectCodeModalClose)?.querySelector(PSA_DOM_ELEMENTS.projectCodeModalClose);
   if (cancelBtn) {
     injectCode(chrome.runtime.getURL('resources/triggerClickFunction.js'), {
-      targetId: cancelBtn.id
+      targetId: cancelBtn.id || undefined,
+      targetSelector: cancelBtn.id ? undefined : PSA_DOM_ELEMENTS.projectCodeModalClose
     });
   }
 
   return true;
+}
+
+function getEndTimePeriodElement() {
+  const doc = getIframeDoc();
+  return doc?.getElementById('EX_TIME_HDR_PERIOD_END_DT');
 }

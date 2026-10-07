@@ -17,7 +17,7 @@
  * @param {object}      entry    - The config entry object whose `.value` will be updated in-memory.
  * @returns {Element|null} The resolved row element, or null if not found.
  */
-function resolveRowByLabel(doc, storedId, label, entry) {
+function resolveRowByLabel(doc, storedId, label) {
   // 1. Fast path: stored ID is still valid.
   const knownEl = storedId ? doc.getElementById(storedId) : null;
   if (knownEl && rowContainsLabel(knownEl, label)) {

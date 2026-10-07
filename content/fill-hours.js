@@ -1,10 +1,5 @@
 'use strict';
 
-const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
-
-// The default activity code applied when claiming an empty/new project row
-const DEFAULT_ACTIVITY = 'PROJET';
-
 /**
  * Fills project hour inputs for Mon–Fri using the following priority per day:
  *  1. Bank holiday → fill the holiday row and skip to next day.
@@ -14,11 +9,7 @@ const DEFAULT_ACTIVITY = 'PROJET';
  */
 async function fillInputs(holidays = []) {
   const { currentConfig: settings } = await chrome.storage.sync.get({
-    currentConfig: {
-      workHours: 8,
-      mondayActivities: [], tuesdayActivities: [], wednesdayActivities: [],
-      thursdayActivities: [], fridayActivities: []
-    }
+    currentConfig: DEFAULT_CURRENT_CONFIG
   });
 
   const doc = getIframeDoc();
@@ -27,14 +18,16 @@ async function fillInputs(holidays = []) {
   const hoursValue = getDailyHours(doc, settings.workHours);
   const { holidayDates, periodEndDate } = parseHolidays(doc, holidays);
   const holidayRow = holidayDates.length > 0
-    ? resolveRowByLabel(doc, config.publicHoliday.value, config.publicHoliday.label, config.publicHoliday)
+    ? resolveRowByLabel(doc, config.publicHoliday.value, config.publicHoliday.label)
     : null;
 
-  for (let i = 0; i < 5; i++) {
-    const dayKey = DAYS[i];
+  const startDayIndex = 0;
+  const lastDayIndex = 5;
+  for (let dayIndex = startDayIndex; dayIndex < lastDayIndex; dayIndex++) {
+    const dayKey = DAYS[dayIndex];
 
     const targetTotal = parseFloat(hoursValue.replace(',', '.'));
-    const currentTotal = getFilledHoursForDay(doc, i);
+    const currentTotal = getFilledHoursForDay(doc, dayIndex);
     const remaining = targetTotal - currentTotal;
 
     if (remaining <= 0) continue; // Skip if day is already full
@@ -42,8 +35,8 @@ async function fillInputs(holidays = []) {
     // Use the remaining hours if the day is only partially filled
     const effectiveHoursValue = remaining.toString().replace('.', ',');
 
-    if (isDayHoliday(periodEndDate, holidayDates, i)) {
-      const input = holidayRow?.querySelector(`input[name^="POL_TIME${i + 2}$"]`);
+    if (isDayHoliday(periodEndDate, holidayDates, dayIndex)) {
+      const input = holidayRow?.querySelector(DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.activityInputIdForDay(dayIndex)));
       if (input) setIfEmpty(input, effectiveHoursValue);
       continue;
     }
@@ -55,12 +48,12 @@ async function fillInputs(holidays = []) {
     for (const activity of activities) {
       if (activity.type === 'project' && activity.code) {
         const row = await getOrCreateProjectRow(doc, activity.code);
-        const input = row?.querySelectorAll('input[name^="TIME"]')[i + 1];
+        const input = row?.querySelector(DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.projectInputIdForDay(dayIndex)));
         if (input) targets.push(input);
       } else if (activity.type === 'extra' && activity.code && activity.code !== 'NONE') {
         const extraEntry = config.extraInputOptions.find(o => o.value === activity.code);
-        const row = resolveRowByLabel(doc, activity.code, extraEntry?.label ?? activity.code, extraEntry);
-        const input = row?.querySelector(`input[name^="POL_TIME${i + 2}$"]`);
+        const row = resolveRowByLabel(doc, activity.code, extraEntry?.label ?? activity.code);
+        const input = row?.querySelector(DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.activityInputIdForDay(dayIndex)));
         if (input) targets.push(input);
       }
     }
@@ -92,7 +85,7 @@ function getActivitiesForDay(settings, day) {
  * Prefers the weekly scheduled hours from the page divided by 5.
  */
 function getDailyHours(doc, fallbackHours) {
-  const scheduledEl = doc.getElementById('UC_EX_TIME_HDR_UC_SCHEDULED_HRS');
+  const scheduledEl = doc.querySelector(DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.scheduledHoursTimesheetId));
   if (scheduledEl) {
     const weekly = parseFloat(scheduledEl.textContent.replace(',', '.'));
     if (!isNaN(weekly) && weekly > 0) return (weekly / 5).toString().replace('.', ',');
@@ -106,8 +99,8 @@ function getDailyHours(doc, fallbackHours) {
  */
 function parseHolidays(doc, holidays) {
   const holidayDates = holidays.map(h => new Date(h.date).toDateString());
-  const periodEndEl = doc.getElementById('EX_TIME_HDR_PERIOD_END_DT');
-  const periodEndDate = periodEndEl?.innerText ? parseFrenchDate(periodEndEl.innerText) : null;
+  const periodEndElement = doc.querySelector(DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.periodDateTimesheetId));
+  const periodEndDate = periodEndElement?.innerText ? parseFrenchDate(periodEndElement.innerText) : null;
   return { holidayDates, periodEndDate };
 }
 
@@ -128,9 +121,9 @@ function isDayHoliday(periodEndDate, holidayDates, i) {
  * Sets PROJECT_CODE and ACTIVITY_CODE on claimed/new rows.
  * @returns {Element|null} The matched or newly created row element.
  */
-async function getOrCreateProjectRow(doc, projectCode) {
-  const allRows = () => Array.from(doc.querySelectorAll('[id^="trEX_TIME_DTL"]'));
-  const getCode = r => r.querySelector('input[name^="PROJECT_CODE"]')?.value.trim() ?? '';
+function getOrCreateProjectRow(doc, projectCode) {
+  const allRows = () => Array.from(doc.querySelectorAll(DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.projectCodeRowsId)));
+  const getCode = row => row.querySelector(`input${DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.projectCodeInputName)}`)?.value.trim() ?? '';
 
   const matchRow = allRows().find(r => getCode(r) === projectCode.trim());
   if (matchRow) return matchRow;
@@ -141,7 +134,7 @@ async function getOrCreateProjectRow(doc, projectCode) {
     return emptyRow;
   }
 
-  const newRowLink = doc.querySelector('a[name^="EX_TIME_DTL$new"]');
+  const newRowLink = doc.querySelector(`a${DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.newProjectRowAnchorName)}`);
   if (!newRowLink) return null;
 
   injectCode(chrome.runtime.getURL('resources/triggerClickFunction.js'), {
@@ -163,35 +156,33 @@ async function getOrCreateProjectRow(doc, projectCode) {
 
 /** Sets the project code and default activity on a row. */
 function claimProjectRow(row, projectCode) {
-  const codeInput = row.querySelector('input[name^="PROJECT_CODE"]');
-  const activityInput = row.querySelector('input[name^="ACTIVITY_CODE"]');
+  const codeInput = row.querySelector(`input${DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.projectCodeInputName)}`);
+  const activityInput = row.querySelector(`input${DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.activityCodeInputName)}`);
   if (codeInput) setAndDispatch(codeInput, projectCode);
   if (activityInput) setAndDispatch(activityInput, DEFAULT_ACTIVITY);
 }
 
 /**
- * Sums all existing hour entries for a specific day index (0=Monday)
+ * Sums all existing hour entries for a specific day index (2=Monday)
  * across both the project and absence tables.
  */
-function getFilledHoursForDay(doc, i) {
+function getFilledHoursForDay(doc, dayIndex) {
   let total = 0;
 
-  // 1. Check Project Table rows (id starts with trEX_TIME_DTL)
-  const projectRows = doc.querySelectorAll('[id^="trEX_TIME_DTL"]');
+  const projectRows = doc.querySelectorAll(DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.projectCodeRowsId));
   projectRows.forEach(row => {
-    // Project inputs are usually indexed via TIME suffix in querySelectorAll
-    const input = row.querySelectorAll('input[name^="TIME"]')[i + 1];
+    const input = row.querySelector(DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.projectInputIdForDay(dayIndex)));
+
     if (input && input.value) {
       const val = parseFloat(input.value.replace(',', '.'));
       if (!isNaN(val)) total += val;
     }
   });
 
-  // 2. Check Absence/Internal Table rows (POL_TIME indexing)
-  const absenceRows = doc.querySelectorAll('[id^="trEX_TRC_MAP_VW"]');
-  absenceRows.forEach(row => {
-    // Absence table columns for Mon-Fri are indexed 2-6
-    const input = row.querySelector(`input[name^="POL_TIME${i + 2}$"]`);
+  const otherActivities = doc.querySelectorAll(DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.activityCodeRowsId));
+  otherActivities.forEach(row => {
+    // Activity table columns for Mon-Fri are indexed 2-6
+    const input =  row.querySelector(DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.activityInputIdForDay(dayIndex)));
     if (input && input.value) {
       const val = parseFloat(input.value.replace(',', '.'));
       if (!isNaN(val)) total += val;
