@@ -3,6 +3,65 @@
 All notable changes to the PSA Speedrun extension will be documented in this file.
 Toutes les modifications notables apportées à l'extension PSA Speedrun seront documentées dans ce fichier.
 
+## [1.3.0] - 2026-10-07
+
+### Added / Ajouts
+
+- add activity badges (#21)
+
+### Fixed / Corrections
+
+- centralize PSA DOM selectors (#20)
+
+## [1.2.3] - 2026-10-07
+
+### Fixed / Corrections
+
+- preserve saved activities after project scrape (#19)
+- preserve FAB panel state during navigation (#18)
+
+## [1.2.2] - 2026-10-02
+
+### Fixed / Corrections
+
+- prevent repeated project code scraping (#17)
+
+## [1.2.1] - 2026-10-02
+
+### Fixed / Corrections
+
+- Add new entry for contractualHours
+
+## [1.2.0] - 2026-09-30
+
+### Added / Ajouts
+
+- improve activity planning and profile configuration (#16)
+
+## [1.1.0] - 2026-09-29
+
+### Added / Ajouts
+
+- add compact profile icon selector beside profile name (#15)
+
+### Fixed / Corrections
+
+- improve reminder notification timing (#14)
+- Update release name from github action
+
+## [1.0.3] - 2026-09-29
+
+### Fixed / Corrections
+
+- check latest release and don't block popup init (#13)
+
+### Other / Autres
+
+- Create source ZIP for GitHub release action
+- Update GitHub action
+- Add GitHub Actions workflow to update extension version
+
+
 ## [1.0.2] - 2026-09-28
 
 ### Fixed / Corrections
@@ -103,5 +162,12 @@ Toutes les modifications notables apportées à l'extension PSA Speedrun seront 
 - **Multi-profile support**: Switch between different project configurations easily.
   - *Support multi-profils : basculement facile entre différentes configurations de projet.*
 
+[1.3.0]: https://github.com/SimonPApside/psa-speedrun/compare/v1.2.3...v1.3.0
+[1.2.3]: https://github.com/SimonPApside/psa-speedrun/compare/v1.2.2...v1.2.3
+[1.2.2]: https://github.com/SimonPApside/psa-speedrun/compare/v1.2.1...v1.2.2
+[1.2.1]: https://github.com/SimonPApside/psa-speedrun/compare/v1.2.0...v1.2.1
+[1.2.0]: https://github.com/SimonPApside/psa-speedrun/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/SimonPApside/psa-speedrun/compare/v1.0.3...v1.1.0
+[1.0.3]: https://github.com/SimonPApside/psa-speedrun/compare/1.0.2...v1.0.3
 [1.0.2]: https://github.com/SimonPApside/psa-speedrun/compare/1.0.1...1.0.2
 [1.0.1]: https://github.com/SimonPApside/psa-speedrun/releases/tag/1.0.1
