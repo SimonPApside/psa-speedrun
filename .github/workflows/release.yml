@@ -18,11 +18,16 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
-      - name: Update manifest version
+      - name: Update version and changelog
         env:
           VERSION: ${{ inputs.version }}
         run: |
+          PREVIOUS_TAG="$(git describe --tags --abbrev=0)"
+          node scripts/update-changelog.mjs "$VERSION" "$PREVIOUS_TAG" HEAD "$(date -u +%F)"
+
           node -e '
             const fs = require("fs");
 
@@ -44,7 +49,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add manifest.json
+          git add manifest.json CHANGELOG.md
 
           if git diff --cached --quiet; then
             echo "No changes to commit."
