@@ -41,21 +41,27 @@ let projectScrapeStarted = false;
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'CHECK_STATUS') {
     sendResponse({ loaded: isReady, url: window.location.href });
+    return false;
 
   } else if (request.type === 'GET_PERIOD_INFO') {
     const periodEndEl = getEndTimePeriodElement();
     sendResponse({ periodEndDate: periodEndEl?.innerText || null });
+    return false;
 
   } else if (request.type === 'FILL_FORM') {
     if (!config) {
       sendResponse({ success: false });
-      return true;
+      return false;
     }
 
     (async () => {
       const confirmedHolidays = await askForHolidayConfirmation();
       const startTime = performance.now();
-      await fillInputs(confirmedHolidays);
+      const activitiesResolved = await fillInputs(confirmedHolidays);
+      if (!activitiesResolved) {
+        sendResponse({ success: false, cancelled: true });
+        return;
+      }
 
       injectCode(chrome.runtime.getURL('resources/triggerClickFunction.js'), {
         targetId: 'UC_EX_WRK_UC_TI_FRA_LINK'
@@ -73,15 +79,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           data: `🏁 PSA Time remplit en  ${Number.parseFloat((endTime - startTime) / 1000).toFixed(2)} secondes`
         });
       });
-    })();
+    })().catch(error => {
+      console.error('[PSA Speedrun] Form filling failed:', error);
+      sendResponse({ success: false, error: error.message });
+    });
+    return true;
   } else if (request.type === 'SCRAPE_PROJECT_CODES') {
     (async () => {
       const success = await scrapeProjectCodes(request.force);
       sendResponse({ success });
-    })();
+    })().catch(error => {
+      console.error('[PSA Speedrun] Project code scraping failed:', error);
+      sendResponse({ success: false, error: error.message });
+    });
+    return true;
   }
 
-  return true; // Keep the message channel open for async sendResponse
+  return false;
 });
 
 /**
@@ -139,7 +153,7 @@ async function scrapeProjectCodes(force = false) {
     codes = await new Promise(resolve => {
       const check = setInterval(() => {
         const searchDoc = getIframeDoc(PSA_DOM_ELEMENTS.searchResultsTableId);
-        const resultsTable = searchDoc.querySelector(
+        const resultsTable = searchDoc?.querySelector(
           DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.searchResultsTableId)
         );
         if (resultsTable) {

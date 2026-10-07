@@ -40,45 +40,59 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     chrome.action.setBadgeBackgroundColor({ color: '#4CAF50', tabId });
     
     // Notify the FAB and other content scripts that tables are ready
-    chrome.tabs.sendMessage(tabId, { type: 'TABLES_READY' });
-    
+    chrome.tabs.sendMessage(tabId, { type: 'TABLES_READY' }).catch(() => {});
+
     sendResponse({ success: true });
+    return false;
 
   } else if (request.type === 'PROJECT_CODES_UPDATED') {
     sendResponse({ success: true });
+    return false;
 
   } else if (request.type === 'TABLES_NOT_DETECTED') {
     delete contentScriptStatus[tabId];
     chrome.action.setBadgeText({ text: '', tabId });
-    chrome.tabs.sendMessage(tabId, { type: 'TABLES_NOT_READY' });
+    chrome.tabs.sendMessage(tabId, { type: 'TABLES_NOT_READY' }).catch(() => {});
     sendResponse({ success: true });
+    return false;
 
   } else if (request.type === 'GET_STATUS') {
     const targetTabId = request.tabId || tabId;
     sendResponse({ status: contentScriptStatus[targetTabId] || { loaded: false } });
+    return false;
 
   } else if (request.type === 'GET_PANEL_STATE') {
-    chrome.storage.session.get({ panelOpen: false }).then(({ panelOpen }) => {
-      sendResponse({ open: panelOpen });
-    });
+    chrome.storage.session.get({ panelOpen: false })
+      .then(({ panelOpen }) => sendResponse({ open: panelOpen }))
+      .catch(error => {
+        console.error('Unable to read side panel state:', error);
+        sendResponse({ open: false });
+      });
+    return true;
 
   } else if (request.type === 'FILL_FORM_FROM_FAB') {
     // Forward the fill request from FAB to the main content script
-    chrome.tabs.sendMessage(tabId, { type: 'FILL_FORM' });
+    if (tabId != null) chrome.tabs.sendMessage(tabId, { type: 'FILL_FORM' }).catch(() => {});
     sendResponse({ success: true });
+    return false;
 
   } else if (request.message === 'GET_PUBLIC_HOLIDAYS') {
-    getJoursFeriesOfWeek(new Date(request.data)).then(result => sendResponse(result));
+    getJoursFeriesOfWeek(new Date(request.data))
+      .then(result => sendResponse(result))
+      .catch(error => {
+        console.error('Unable to load public holidays:', error);
+        sendResponse([]);
+      });
+    return true;
   } else if (request.message === 'CREATE_NOTIFICATION') {
     createNotification(null, request.data);
     sendResponse({ success: true });
+    return false;
   } else if (request.type === 'FAB_TOGGLE') {
-    console.log(request);
     const windowId = sender.tab?.windowId;
-
-    if (!windowId) {
+    if (windowId == null) {
       sendResponse({ success: false });
-      return true;
+      return false;
     }
 
     let promise;
@@ -91,12 +105,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         setPanelState(request.open);
         sendResponse({ success: true });
       })
-      .catch(() => sendResponse({ success: false }));
+      .catch(error => {
+        console.error('Unable to toggle side panel:', error);
+        sendResponse({ success: false });
+      });
 
     return true;
   }
 
-  return true;
+  // Unhandled message types must not keep a response channel open.
+  return false;
 });
 
 // ============================================================

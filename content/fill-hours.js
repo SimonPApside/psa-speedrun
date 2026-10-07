@@ -21,6 +21,21 @@ async function fillInputs(holidays = []) {
     ? resolveRowByLabel(doc, config.publicHoliday.value, config.publicHoliday.label)
     : null;
 
+  // Resolve every ambiguous configured activity before writing any hours.
+  const ambiguities = [];
+  const dayLabels = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
+  for (const [dayIndex, day] of DAYS.entries()) {
+    for (const activity of getActivitiesForDay(settings, day)) {
+      if (activity.type !== 'extra' || !activity.code || activity.code === 'NONE') continue;
+      const entry = config.extraInputOptions.find(option => option.value === activity.code);
+      const label = entry?.label ?? activity.code;
+      const rows = findRowsByLabel(doc, label);
+      if (rows.length > 1) ambiguities.push({ day: dayLabels[dayIndex], key: day, label, rows });
+    }
+  }
+  const selectedRows = await askForActivityRows(ambiguities);
+  if (!selectedRows) return false;
+
   const startDayIndex = 0;
   const lastDayIndex = 5;
   for (let dayIndex = startDayIndex; dayIndex < lastDayIndex; dayIndex++) {
@@ -52,7 +67,9 @@ async function fillInputs(holidays = []) {
         if (input) targets.push(input);
       } else if (activity.type === 'extra' && activity.code && activity.code !== 'NONE') {
         const extraEntry = config.extraInputOptions.find(o => o.value === activity.code);
-        const row = resolveRowByLabel(doc, activity.code, extraEntry?.label ?? activity.code);
+        const label = extraEntry?.label ?? activity.code;
+        const row = selectedRows.get(`${dayKey}:${label}`)
+          || resolveRowByLabel(doc, activity.code, label);
         const input = row?.querySelector(DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.activityInputIdForDay(dayIndex)));
         if (input) targets.push(input);
       }
@@ -70,6 +87,7 @@ async function fillInputs(holidays = []) {
       });
     }
   }
+  return true;
 }
 
 function getActivitiesForDay(settings, day) {

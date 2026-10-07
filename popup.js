@@ -309,10 +309,8 @@ async function fillForm() {
             const config = getFormConfig();
             chrome.storage.sync.set({ currentConfig: config }, () => {
                 chrome.tabs.sendMessage(tab.id, { type: 'FILL_FORM' }, (fillResponse) => {
-                    // Clean up only after content.js confirms fillInputsRest is done
-                    if (fillResponse && fillResponse.success) {
-                        chrome.storage.sync.remove('currentConfig');
-                    }
+                    // The temporary custom profile is only needed during this attempt.
+                    chrome.storage.sync.remove('currentConfig');
                 });
             });
         } else {
