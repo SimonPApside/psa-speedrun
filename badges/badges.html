@@ -1,0 +1,39 @@
+<div class="activity-badges">
+    <section class="activity-badge activity-badge--bike">
+        <div class="activity-badge__icon" aria-hidden="true">🚲</div>
+        <div class="activity-badge__info">
+            <div class="activity-badge__label">Trajets vélo au bureau</div>
+            <div class="activity-badge__count">
+                <span id="bikeCount" class="activity-badge__number">0</span>
+                <span class="activity-badge__unit">jour(s)</span>
+            </div>
+        </div>
+        <div class="activity-badge__actions">
+            <button id="bikeModifyBtn" class="activity-badge__button" title="Modifier le compteur manuel">Modifier</button>
+            <div id="bikeUpdateArea" class="activity-badge__edit" hidden>
+                <input type="number" id="bikeManualInput" min="0" max="365" aria-label="Nouveau compteur vélo">
+                <button id="bikeConfirmBtn" class="activity-badge__button">OK</button>
+            </div>
+            <button id="bikeResetBtn" class="activity-badge__button" title="Remettre à zéro">Réinitialiser</button>
+        </div>
+    </section>
+
+    <section class="activity-badge activity-badge--telework">
+        <div class="activity-badge__icon" aria-hidden="true">🏠</div>
+        <div class="activity-badge__info">
+            <div class="activity-badge__label">Jours de télétravail</div>
+            <div class="activity-badge__count">
+                <span id="teleworkCount" class="activity-badge__number">0</span>
+                <span class="activity-badge__unit">jour(s)</span>
+            </div>
+        </div>
+        <div class="activity-badge__actions">
+            <button id="teleworkModifyBtn" class="activity-badge__button" title="Modifier le compteur manuel">Modifier</button>
+            <div id="teleworkUpdateArea" class="activity-badge__edit" hidden>
+                <input type="number" id="teleworkManualInput" min="0" max="365" step="0.5" aria-label="Nouveau compteur télétravail">
+                <button id="teleworkConfirmBtn" class="activity-badge__button">OK</button>
+            </div>
+            <button id="teleworkResetBtn" class="activity-badge__button" title="Remettre à zéro">Réinitialiser</button>
+        </div>
+    </section>
+</div>

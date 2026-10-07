@@ -11,8 +11,8 @@ const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 let DEFAULT_PROFILE_ICON = '';
 let PROFILE_ICONS = new Set();
 
-// Populated at startup from config.json (transportOptions with green:true)
-let greenTransportValues = new Set();
+// Initialized by badges.js after its markup is mounted.
+let updateActivityBadges = () => {};
 
 // Loaded from JSON at startup
 let DEFAULT_CONFIG = null;
@@ -37,15 +37,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     DEFAULT_CONFIG = defaultProfile;
 
+    updateActivityBadges = await initializeActivityBadges(configData, flashInstruction);
+
     if (configData) {
         populateSelectOptions(configData);
-        if (configData.transportOptions) {
-            greenTransportValues = new Set(
-                configData.transportOptions
-                    .filter(opt => opt.green)
-                    .map(opt => opt.value)
-            );
-        }
     }
 
     // 2. Restore saved state from storage
@@ -116,61 +111,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             picker.removeAttribute('open');
         });
     });
-
-    // 8. Bicycle badge: load count & register reset
-    chrome.storage.sync.get({ bicycleCount: 0 }, (items) => {
-        updateBikeCountDisplay(items.bicycleCount);
-    });
-    
-    const bikeModifyBtn = document.getElementById('bikeModifyBtn');
-    if (bikeModifyBtn) {
-        bikeModifyBtn.addEventListener('click', (e) => {
-            const area = document.getElementById('bikeUpdateArea');
-            const input = document.getElementById('bikeManualInput');
-            const currentCount = document.getElementById('bikeCount')?.textContent || '0';
-
-            if (area) area.style.display = 'flex';
-            e.target.style.display = 'none'; // Hide the 'Modifier' button
-            if (input) {
-                input.value = currentCount;
-                input.focus();
-            }
-        });
-    }
-
-    const bikeConfirmBtn = document.getElementById('bikeConfirmBtn');
-    if (bikeConfirmBtn) {
-        bikeConfirmBtn.addEventListener('click', () => {
-            const input = document.getElementById('bikeManualInput');
-            if (!input) return;
-            const val = parseFloat(input.value);
-
-            if (isNaN(val) || val < 0 || val > DAY_BY_YEAR) {
-                flashInstruction(`⚠️ Entre 0 et ${DAY_BY_YEAR}`, 'warning');
-                return;
-            }
-
-            chrome.storage.sync.set({ bicycleCount: val }, () => {
-                updateBikeCountDisplay(val);
-                const area = document.getElementById('bikeUpdateArea');
-                if (area) area.style.display = 'none';
-                if (bikeModifyBtn) bikeModifyBtn.style.display = 'inline-block'; // Show the button again
-                flashInstruction('🚲 Compteur mis à jour', 'success');
-            });
-        });
-    }
-
-    const bikeResetBtn = document.getElementById('bikeResetBtn');
-    if (bikeResetBtn) {
-        bikeResetBtn.addEventListener('click', () => {
-            if (confirm('Réinitialiser le compteur de trajets vélo ?')) {
-                chrome.storage.sync.set({ bicycleCount: 0, creditedGreenDates: [] }, () => {
-                    updateBikeCountDisplay(0);
-                    flashInstruction('🚲 Compteur réinitialisé', 'success');
-                });
-            }
-        });
-    }
 
     // 9. Project codes auto-fill
     await getProjetAndActivityData();
@@ -354,10 +294,14 @@ async function fillForm() {
     if (!profileSelect) return;
     const profileId = profileSelect.value;
 
-    // Fetch period info to increment bike counter for the whole week
+    // Fetch the PSA week and update both activity counters.
     chrome.tabs.sendMessage(tab.id, { type: 'GET_PERIOD_INFO' }, (response) => {
         if (response && response.periodEndDate) {
-            incrementBikeCountIfNeeded(response.periodEndDate);
+            const dailyTransportValues = DAYS.map(day => ({
+                AM: document.getElementById(`${day}AM`)?.value,
+                PM: document.getElementById(`${day}PM`)?.value
+            }));
+            updateActivityBadges(response.periodEndDate, dailyTransportValues);
         }
 
         if (profileId === 'custom') {
@@ -889,90 +833,6 @@ function syncActivitySelectFromStored(day, activities) {
     updateActivityPicker(day);
     updateStrikethrough(day);
 }
-
-// ============================================================
-// BICYCLE COUNTER
-// ============================================================
-
-/**
- * Reads the 5 transport selects and increments bicycleCount in storage
- * for each green day that has not been counted yet for its specific date.
- *
- * @param {string} periodEndDateStr - The "DD/MM/YYYY" period end date from PSA.
- */
-function incrementBikeCountIfNeeded(periodEndDateStr) {
-    if (!periodEndDateStr) return;
-
-    // periodEndDateStr is "DD/MM/YYYY" from PSA (Saturday)
-    const [day, month, year] = periodEndDateStr.split('/').map(Number);
-    const periodEndDate = new Date(year, month - 1, day);
-    periodEndDate.setHours(12, 0, 0, 0); // safeguard for DST/timezone shifts
-
-    chrome.storage.sync.get({ bicycleCount: 0, creditedGreenDates: [] }, (items) => {
-        let newCount = items.bicycleCount;
-        let newCreditedDates = [...items.creditedGreenDates];
-        let hasChanged = false;
-
-        for (let i = 0; i < 5; i++) {
-            const dayKey = DAYS[i];
-            const amEl = document.getElementById(dayKey + 'AM');
-            const pmEl = document.getElementById(dayKey + 'PM');
-            if (!amEl || !pmEl) continue;
-
-            const amValue = amEl.value;
-            const pmValue = pmEl.value;
-            
-            // 0.5 points for morning green, 0.5 points for afternoon green
-            const amPoints = greenTransportValues.has(amValue) ? 0.5 : 0;
-            const pmPoints = greenTransportValues.has(pmValue) ? 0.5 : 0;
-            const totalDayPoints = amPoints + pmPoints;
-
-            // Calculate actual date for this weekday (Mon=0...Fri=4)
-            const dayDate = new Date(periodEndDate);
-            dayDate.setDate(dayDate.getDate() - (5 - i));
-            const dateStr = dayDate.toISOString().slice(0, 10); // 'YYYY-MM-DD'
-
-            // Storage for credited dates now needs to store what was credited (0.5 or 1.0)
-            // But to keep it simple, we'll store the object in creditedGreenItems if we want granularity
-            // For now, let's keep it simple: we store dateStr + session
-            const amKey = dateStr + '_AM';
-            const pmKey = dateStr + '_PM';
-
-            if (amPoints > 0 && !newCreditedDates.includes(amKey)) {
-                newCount += amPoints;
-                newCreditedDates.push(amKey);
-                hasChanged = true;
-            } else if (amPoints === 0 && newCreditedDates.includes(amKey)) {
-                newCount = Math.max(0, newCount - 0.5);
-                newCreditedDates = newCreditedDates.filter(d => d !== amKey);
-                hasChanged = true;
-            }
-
-            if (pmPoints > 0 && !newCreditedDates.includes(pmKey)) {
-                newCount += pmPoints;
-                newCreditedDates.push(pmKey);
-                hasChanged = true;
-            } else if (pmPoints === 0 && newCreditedDates.includes(pmKey)) {
-                newCount = Math.max(0, newCount - 0.5);
-                newCreditedDates = newCreditedDates.filter(d => d !== pmKey);
-                hasChanged = true;
-            }
-        }
-
-        if (hasChanged) {
-            chrome.storage.sync.set({ bicycleCount: newCount, creditedGreenDates: newCreditedDates }, () => {
-                updateBikeCountDisplay(newCount);
-            });
-        }
-    });
-}
-
-/** Updates the bike count number shown in the badge. */
-function updateBikeCountDisplay(count) {
-    const el = document.getElementById('bikeCount');
-    if (el) el.textContent = count;
-}
-
 
 // ============================================================
 // JSON LOADER
