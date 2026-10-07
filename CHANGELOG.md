@@ -3,6 +3,17 @@
 All notable changes to the PSA Speedrun extension will be documented in this file.
 Toutes les modifications notables apportées à l'extension PSA Speedrun seront documentées dans ce fichier.
 
+## [1.4.0] - 2026-10-07
+
+### Added / Ajouts
+
+- prompt for ambiguous activity matches (#23)
+
+### Other / Autres
+
+- chore: clean logs and refresh activity config (#24)
+- chore: automate changelog generation (#22)
+
 ## [1.3.0] - 2026-10-07
 
 ### Added / Ajouts
@@ -162,6 +173,7 @@ Toutes les modifications notables apportées à l'extension PSA Speedrun seront 
 - **Multi-profile support**: Switch between different project configurations easily.
   - *Support multi-profils : basculement facile entre différentes configurations de projet.*
 
+[1.4.0]: https://github.com/SimonPApside/psa-speedrun/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/SimonPApside/psa-speedrun/compare/v1.2.3...v1.3.0
 [1.2.3]: https://github.com/SimonPApside/psa-speedrun/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/SimonPApside/psa-speedrun/compare/v1.2.1...v1.2.2
