@@ -1,8 +1,24 @@
 'use strict';
 
-/** Returns the document inside the PSA iframe. */
-function getIframeDoc() {
-  return document.getElementsByTagName('iframe')[0]?.contentWindow?.document ?? null;
+/** Returns the iframe document that contains the requested PSA elements. */
+function getIframeDoc(requiredMarkerSelector = PSA_DOM_ELEMENTS.timesheetTableId) {
+  const marker = typeof requiredMarkerSelector === 'string'
+    ? requiredMarkerSelector : DOMElementSelectorUtil.toSelector(requiredMarkerSelector);
+
+  for (const frame of document.querySelectorAll('iframe')) {
+    let frameDoc;
+    try {
+      frameDoc = frame.contentDocument ?? frame.contentWindow?.document;
+    } catch {
+      // Ignore frames that are not accessible from the PSA page.
+      continue;
+    }
+
+    if (frameDoc?.querySelector(marker)) return frameDoc;
+  }
+
+  // Do not return an unrelated iframe: PSA can switch to an AJAX panel document.
+  return null;
 }
 
 /** Sets an element's value and fires a change event so PSA reacts. */
