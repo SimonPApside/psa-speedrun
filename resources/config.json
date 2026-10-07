@@ -6,24 +6,24 @@
     },
     "extraInputOptions": [
         {
-            "value": "trEX_TRC_MAP_VW$0_row19",
+            "value": "trEX_TRC_MAP_VW$0_row24",
             "label": "Avant-vente"
         },
         {
-            "value": "trEX_TRC_MAP_VW$0_row20",
+            "value": "trEX_TRC_MAP_VW$0_row25",
             "label": "Général et administration"
         },
         {
-            "value": "trEX_TRC_MAP_VW$0_row21",
+            "value": "trEX_TRC_MAP_VW$0_row26",
             "label": "Compl temps partiel / activite",
             "skipRestAndLocation": true
         },
         {
-            "value": "trEX_TRC_MAP_VW$0_row18",
+            "value": "trEX_TRC_MAP_VW$0_row23",
             "label": "Travaux passagers"
         },
         {
-            "value": "trEX_TRC_MAP_VW$0_row22",
+            "value": "trEX_TRC_MAP_VW$0_row27",
             "label": "Formation"
         },
         {
@@ -37,22 +37,9 @@
             "skipRestAndLocation": true
         },
         {
-            "value": "trEX_TRC_MAP_VW$0_row25",
+            "value": "trEX_TRC_MAP_VW$0_row30",
             "label": "RTT",
             "skipRestAndLocation": true
-        },
-        {
-            "value": "trEX_TRC_MAP_VW$0_row26",
-            "label": "RTT Employeur",
-            "skipRestAndLocation": true
-        },
-        {
-            "value": "trEX_TRC_MAP_VW$0_row45",
-            "label": "IRP Délégation"
-        },
-        {
-            "value": "trEX_TRC_MAP_VW$0_row46",
-            "label": "IRP Réunion"
         }
     ],
     "tables": [
