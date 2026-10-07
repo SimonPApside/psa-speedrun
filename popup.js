@@ -347,7 +347,7 @@ async function checkExtensionStatus() {
             }
         });
     } catch (err) {
-        console.error('Extension status check failed:', err);
+        console.warn('Extension status check failed:', err);
         showInstruction('❌ Erreur de connexion', 'warning');
         if (fillButton) fillButton.style.display = 'none';
     }
@@ -397,7 +397,7 @@ async function checkForAvailableUpdate() {
             showUpdateBanner(currentVersion, latestVersion, latestRelease.html_url);
         }
     } catch (err) {
-        console.info('Update check skipped:', err);
+        console.debug('Update check skipped:', err);
     }
 }
 
@@ -551,7 +551,6 @@ function loadConfigIntoForm(config) {
 
     // Older saved profiles have no icon field; preserve their original person icon.
     const profileIcon = document.getElementById('profileIcon');
-    console.log(config);
     if (profileIcon) profileIcon.value = getProfileIcon(config.profileIcon);
 
     // Standard fields

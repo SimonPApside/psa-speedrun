@@ -28,7 +28,7 @@ function resolveRowByLabel(doc, storedId, label) {
   const matches = findRowsByLabel(doc, label);
   if (matches.length) return matches[0];
 
-  console.error(`[PSA Speedrun] Could not find any row matching label "${label}".`);
+  console.warn(`[PSA Speedrun] Could not find any row matching label "${label}".`);
   return null;
 }
 

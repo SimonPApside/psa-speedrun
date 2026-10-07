@@ -192,8 +192,6 @@ async function getJoursFeriesOfWeek(date) {
     await chrome.storage.local.set({ [storageKey]: jours });
   }
 
-  console.log(jours);
-
   return getWeekJoursFeries(date, jours);
 }
 
