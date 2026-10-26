@@ -16,7 +16,8 @@ let updateActivityBadges = () => {};
 
 // Loaded from JSON at startup
 let DEFAULT_CONFIG = null;
-let extraInputOptions = [];
+let activityOptions = [];
+let activityGroups = [];
 let projectCodesCache = [];
 
 
@@ -208,7 +209,7 @@ async function getProjetAndActivityData({ removeMissing = false } = {}) {
         updateProfileSelectVisuals(savedProfiles);
     }
 
-    return { projectCodes, extraInputOptions };
+    return { projectCodes, activityOptions };
 }
 
 // ============================================================
@@ -255,6 +256,15 @@ function saveCurrentConfig() {
     if (profileId === 'custom') return; // Custom is never saved
 
     const config = getFormConfig();
+    const conflictingGroups = getSelectedDeductionGroups(config);
+    if (conflictingGroups.length > 1) {
+        const labels = conflictingGroups.map(group => group.label || group.code).join(' ; ');
+        showInstruction(
+            `Configuration non enregistrée : plusieurs groupes déduisent l’horaire hebdomadaire (${labels}). Gardez les activités d’un seul groupe de déduction.`,
+            'warning'
+        );
+        return;
+    }
 
     chrome.storage.sync.get(buildDefaultStorage(), (items) => {
         const savedProfiles = { ...items.savedProfiles, [profileId]: config };
@@ -265,6 +275,29 @@ function saveCurrentConfig() {
             setTimeout(closeAccordion, 1000);
         });
     });
+}
+
+function getSelectedDeductionGroups(config) {
+    const selectedCodes = new Set();
+    DAYS.forEach(day => {
+        const activities = config[`${day}Activities`];
+        if (!Array.isArray(activities)) return;
+        activities.forEach(activity => {
+            if (activity.type !== 'extra') return;
+            const option = findActivityOption(activity.code);
+            const group = activityGroups.find(item => item.code === option?.group);
+            if (group?.isDeductFromWeeklyScheduledHours) selectedCodes.add(group.code);
+        });
+    });
+    return activityGroups.filter(group => selectedCodes.has(group.code));
+}
+
+function getActivityOptionCode(option) {
+    return option.id || option.value;
+}
+
+function findActivityOption(code) {
+    return activityOptions.find(option => getActivityOptionCode(option) === code);
 }
 
 function resetConfig() {
@@ -593,6 +626,15 @@ function normalizeActivitiesConfig(config) {
                 ? [{ type: 'project', code: project }]
                 : extra && extra !== 'NONE' ? [{ type: 'extra', code: extra }] : [];
         }
+        normalized[`${day}Activities`] = normalized[`${day}Activities`].map(activity => {
+            if (activity.type !== 'extra' || activity.code !== 'MW_STAT') return activity;
+            const schoolOption = activityOptions.find(option =>
+                option.description === 'Journée école'
+                || (option.label === 'Compl temps partiel / activite'
+                    && activityGroups.some(group => group.code === option.group && group.isDeductFromWeeklyScheduledHours))
+            );
+            return schoolOption ? { ...activity, code: getActivityOptionCode(schoolOption) } : activity;
+        });
         delete normalized[`${day}Project`];
         delete normalized[`${day}Extra`];
     });
@@ -657,8 +699,12 @@ function populateSelectOptions(config) {
             populateSelect(day + 'PM', config.transportOptions);
         });
     }
-    if (config.extraInputOptions) {
-        extraInputOptions = config.extraInputOptions;
+    if (config.activityOptions) {
+        activityOptions = config.activityOptions.map(option => ({
+            ...option,
+            description: option.description || option.label
+        }));
+        activityGroups = config.activityGroup || [];
         populateActivitySelects();
     }
 }
@@ -721,19 +767,38 @@ function populateActivitySelects() {
             projectGroup.appendChild(option);
         });
 
-        const extraGroup = document.createElement('optgroup');
-        extraGroup.label = '✨ Absences et autres';
+        select.appendChild(projectGroup);
+        const groupedOptions = new Set();
+        activityGroups.forEach(activityGroup => {
+            const groupOptions = activityOptions.filter(option => option.group === activityGroup.code);
+            if (!groupOptions.length) return;
 
-        extraInputOptions.forEach(opt => {
-            const option = document.createElement('option');
-            option.value = `extra:${opt.value}`;
-            option.textContent = opt.label ? `${opt.label}` : 'Aucune';
-            option.dataset.kind = 'extra';
-            extraGroup.appendChild(option);
+            const optionGroup = document.createElement('optgroup');
+            optionGroup.label = activityGroup.label;
+            groupOptions.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = `extra:${getActivityOptionCode(opt)}`;
+                option.textContent = opt.description || opt.label || 'Aucune';
+                option.dataset.kind = 'extra';
+                optionGroup.appendChild(option);
+                groupedOptions.add(opt);
+            });
+            select.appendChild(optionGroup);
         });
 
-        select.appendChild(projectGroup);
-        select.appendChild(extraGroup);
+        const ungroupedOptions = activityOptions.filter(option => !groupedOptions.has(option));
+        if (ungroupedOptions.length) {
+            const otherGroup = document.createElement('optgroup');
+            otherGroup.label = 'Autres activités';
+            ungroupedOptions.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = `extra:${getActivityOptionCode(opt)}`;
+                option.textContent = opt.description || opt.label || 'Aucune';
+                option.dataset.kind = 'extra';
+                otherGroup.appendChild(option);
+            });
+            select.appendChild(otherGroup);
+        }
         syncActivitySelectFromStored(day, select.dataset.savedActivities
             ? JSON.parse(select.dataset.savedActivities) : []);
         buildActivityPickerMenu(day);

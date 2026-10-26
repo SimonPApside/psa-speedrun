@@ -4,42 +4,82 @@
         "label": "Jour férié",
         "value": "trEX_TRC_MAP_VW$0_row29"
     },
-    "extraInputOptions": [
+    "billingActions": [
+        { "value": "B", "label": "facturable", "kind": "billable", "legacyDefault": true },
+        { "value": "U", "label": "non facturable", "kind": "nonBillable" }
+    ],
+    "activityGroup": [
+        {
+            "code": "school-and-irregular-absence",
+            "label": "🧑‍💻 Alternance et absence irrégulière",
+            "isDeductFromWeeklyScheduledHours": true,
+            "deductCodeForWeeklyScheduledHours": "MW_STAT"
+        },
+        {
+            "code": "absences-and-others",
+            "label": "🗓️ Absences et autres"
+        }
+    ],
+    "activityOptions": [
         {
             "value": "trEX_TRC_MAP_VW$0_row24",
-            "label": "Avant-vente"
+            "label": "Avant-vente",
+            "description": "Avant-vente",
+            "group": "absences-and-others"
         },
         {
             "value": "trEX_TRC_MAP_VW$0_row25",
-            "label": "Général et administration"
+            "label": "Général et administration",
+            "description": "Général et administration",
+            "group": "absences-and-others"
         },
         {
             "value": "trEX_TRC_MAP_VW$0_row26",
             "label": "Compl temps partiel / activite",
-            "skipRestAndLocation": true
+            "description": "Compl temps partiel / activite",
+            "skipRestAndLocation": true,
+            "group": "absences-and-others"
+        },
+        {
+            "id": "school-day",
+            "value": "trEX_TRC_MAP_VW$0_row26",
+            "label": "Compl temps partiel / activite",
+            "description": "Journée école",
+            "skipRestAndLocation": true,
+            "group": "school-and-irregular-absence"
         },
         {
             "value": "trEX_TRC_MAP_VW$0_row23",
-            "label": "Travaux passagers"
+            "label": "Travaux passagers",
+            "description": "Travaux passagers",
+            "group": "absences-and-others"
         },
         {
             "value": "trEX_TRC_MAP_VW$0_row27",
-            "label": "Formation"
+            "label": "Formation",
+            "description": "Formation",
+            "group": "absences-and-others"
         },
         {
             "value": "trEX_TRC_MAP_VW$0_row5",
             "label": "Maladie",
-            "skipRestAndLocation": true
+            "description": "Maladie",
+            "skipRestAndLocation": true,
+            "group": "absences-and-others"
         },
         {
             "value": "trEX_TRC_MAP_VW$0_row3",
             "label": "Vacances (Congés payés)",
-            "skipRestAndLocation": true
+            "description": "Vacances (Congés payés)",
+            "skipRestAndLocation": true,
+            "group": "absences-and-others"
         },
         {
             "value": "trEX_TRC_MAP_VW$0_row30",
             "label": "RTT",
-            "skipRestAndLocation": true
+            "description": "RTT",
+            "skipRestAndLocation": true,
+            "group": "absences-and-others"
         }
     ],
     "tables": [

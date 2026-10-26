@@ -32,7 +32,7 @@ function fillInputsRest(holidays = [], onDone) {
           ? [{ type: 'extra', code: settings[`${day}Extra`] }] : [];
       const configuredAbsence = activities.some(activity => {
         if (activity.type !== 'extra') return false;
-        const option = config.extraInputOptions.find(o => o.value === activity.code);
+        const option = getActivityOption(activity.code);
         return option?.skipRestAndLocation === true;
       });
 
@@ -57,10 +57,10 @@ function fillInputsRest(holidays = [], onDone) {
 
 /** Returns true when PSA already has absence hours for the given weekday. */
 function hasExistingAbsenceForDay(doc, dayIndex) {
-  const absenceOptions = config.extraInputOptions.filter(option => option.skipRestAndLocation);
+  const absenceOptions = config.activityOptions.filter(option => option.skipRestAndLocation);
 
   return absenceOptions.some(option => {
-    const row = resolveRowByLabel(doc, option.value, option.label);
+    const row = resolveRowByLabel(doc, null, option.label);
     if (!row) return false;
 
     const input = row.querySelector(DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.activityInputIdForDay(dayIndex)));

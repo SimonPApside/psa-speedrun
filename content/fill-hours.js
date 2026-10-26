@@ -15,8 +15,14 @@ async function fillInputs(holidays = []) {
   const doc = getIframeDoc();
   if (!doc) return;
 
-  const hoursValue = getDailyHours(doc, settings.workHours);
+  const scheduledHoursEl = findPSAElement(PSA_DOM_ELEMENTS.scheduledHoursTimesheetId);
   const { holidayDates, periodEndDate } = parseHolidays(doc, holidays);
+  const deduction = getSelectedWeeklyDeduction(settings);
+  const periodKey = getPeriodStorageKey(periodEndDate);
+  const scheduledHours = await getWeeklyScheduledHours(scheduledHoursEl, periodKey, deduction != null);
+  const hoursValue = scheduledHours != null && scheduledHours > 0
+    ? (scheduledHours / 5).toString().replace('.', ',')
+    : settings.workHours.toString().replace('.', ',');
   const holidayRow = holidayDates.length > 0
     ? resolveRowByLabel(doc, config.publicHoliday.value, config.publicHoliday.label)
     : null;
@@ -27,7 +33,7 @@ async function fillInputs(holidays = []) {
   for (const [dayIndex, day] of DAYS.entries()) {
     for (const activity of getActivitiesForDay(settings, day)) {
       if (activity.type !== 'extra' || !activity.code || activity.code === 'NONE') continue;
-      const entry = config.extraInputOptions.find(option => option.value === activity.code);
+      const entry = getActivityOption(activity.code);
       const label = entry?.label ?? activity.code;
       const rows = findRowsByLabel(doc, label);
       if (rows.length > 1) ambiguities.push({ day: dayLabels[dayIndex], key: day, label, rows });
@@ -35,6 +41,10 @@ async function fillInputs(holidays = []) {
   }
   const selectedRows = await askForActivityRows(ambiguities);
   if (!selectedRows) return false;
+
+  if (deduction && scheduledHours != null && periodKey) {
+    await chrome.storage.local.set({ [periodKey]: scheduledHours });
+  }
 
   const startDayIndex = 0;
   const lastDayIndex = 5;
@@ -66,10 +76,10 @@ async function fillInputs(holidays = []) {
         const input = row?.querySelector(DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.projectInputIdForDay(dayIndex)));
         if (input) targets.push(input);
       } else if (activity.type === 'extra' && activity.code && activity.code !== 'NONE') {
-        const extraEntry = config.extraInputOptions.find(o => o.value === activity.code);
+        const extraEntry = getActivityOption(activity.code);
         const label = extraEntry?.label ?? activity.code;
         const row = selectedRows.get(`${dayKey}:${label}`)
-          || resolveRowByLabel(doc, activity.code, label);
+          || resolveRowByLabel(doc, null, label);
         const input = row?.querySelector(DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.activityInputIdForDay(dayIndex)));
         if (input) targets.push(input);
       }
@@ -87,15 +97,107 @@ async function fillInputs(holidays = []) {
       });
     }
   }
+
+  if (deduction && scheduledHours != null) {
+    applyWeeklyScheduledHoursDeduction(doc, settings, deduction, scheduledHours);
+  }
   return true;
+}
+
+function getSelectedWeeklyDeduction(settings) {
+  for (const day of DAYS) {
+    for (const activity of getActivitiesForDay(settings, day)) {
+      if (activity.type !== 'extra' || !activity.code) continue;
+      const option = getActivityOption(activity.code);
+      const group = config.activityGroup?.find(item => item.code === option?.group);
+      if (group?.isDeductFromWeeklyScheduledHours) return group;
+    }
+  }
+  return null;
+}
+
+async function getWeeklyScheduledHours(element, storageKey, shouldPersistBaseline) {
+  if (!element) return null;
+  const currentValue = parseHours(element.value ?? element.textContent);
+  if (storageKey && shouldPersistBaseline) {
+    const stored = await chrome.storage.local.get(storageKey);
+    const baseline = Number(stored[storageKey]);
+    if (Number.isFinite(baseline)) return baseline;
+    if (Number.isFinite(currentValue)) return currentValue;
+  }
+  return Number.isFinite(currentValue) ? currentValue : null;
+}
+
+function getPeriodStorageKey(periodEndDate) {
+  if (!periodEndDate || Number.isNaN(periodEndDate.getTime())) return null;
+  const date = `${periodEndDate.getFullYear()}-${String(periodEndDate.getMonth() + 1).padStart(2, '0')}-${String(periodEndDate.getDate()).padStart(2, '0')}`;
+  return `weeklyScheduledHoursBaseline:${date}`;
+}
+
+function applyWeeklyScheduledHoursDeduction(doc, settings, group, baseline) {
+  const selectedActivities = new Map();
+  for (const day of DAYS) {
+    for (const activity of getActivitiesForDay(settings, day)) {
+      if (activity.type !== 'extra' || !activity.code) continue;
+      const option = getActivityOption(activity.code);
+      if (option?.group === group.code) selectedActivities.set(getActivityOptionCode(option), option);
+    }
+  }
+
+  let deductedHours = 0;
+  for (const option of selectedActivities.values()) {
+    const row = resolveRowByLabel(doc, null, option.label);
+    if (!row) continue;
+    for (let dayIndex = 0; dayIndex < DAYS.length; dayIndex++) {
+      const input = row.querySelector(DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.activityInputIdForDay(dayIndex)));
+      const value = parseHours(input?.value);
+      if (Number.isFinite(value) && value > 0) deductedHours += value;
+    }
+  }
+
+  const scheduledElement = findPSAElement(PSA_DOM_ELEMENTS.scheduledHoursTimesheetId);
+  const reasonElement = findPSAElement(PSA_DOM_ELEMENTS.scheduledHoursReasonId);
+  const reasonCode = group.deductCodeForWeeklyScheduledHours;
+  if (!scheduledElement || !reasonElement || !reasonCode) return;
+
+  const adjustedHours = Math.max(0, Math.round((baseline - deductedHours) * 100) / 100);
+  setAndDispatch(scheduledElement, String(adjustedHours).replace('.', ','));
+  setAndDispatch(reasonElement, reasonCode);
+}
+
+function parseHours(value) {
+  if (value == null) return NaN;
+  const parsed = Number.parseFloat(String(value).trim().replace(',', '.'));
+  return Number.isFinite(parsed) ? parsed : NaN;
 }
 
 function getActivitiesForDay(settings, day) {
   const activities = settings[`${day}Activities`];
-  if (Array.isArray(activities)) return activities;
+  if (Array.isArray(activities)) return activities.map(normalizeActivity);
   if (settings[`${day}Project`]) return [{ type: 'project', code: settings[`${day}Project`] }];
   const extra = settings[`${day}Extra`];
-  return extra && extra !== 'NONE' ? [{ type: 'extra', code: extra }] : [];
+  return extra && extra !== 'NONE' ? [normalizeActivity({ type: 'extra', code: extra })] : [];
+}
+
+function normalizeActivity(activity) {
+  if (activity?.type !== 'extra' || activity.code !== 'MW_STAT') return activity;
+  const schoolOption = config.activityOptions.find(option =>
+    option.description === 'Journée école'
+    || (option.label === 'Compl temps partiel / activite'
+      && config.activityGroup?.some(group => group.code === option.group && group.isDeductFromWeeklyScheduledHours))
+  );
+  return schoolOption ? { ...activity, code: getActivityOptionCode(schoolOption) } : activity;
+}
+
+function getActivityOption(value) {
+  const normalized = value === 'MW_STAT'
+    ? normalizeActivity({ type: 'extra', code: value }).code
+    : value;
+  return config.activityOptions.find(item => getActivityOptionCode(item) === normalized);
+}
+
+function getActivityOptionCode(option) {
+  return option.id || option.value;
 }
 
 /**
@@ -103,11 +205,9 @@ function getActivitiesForDay(settings, day) {
  * Prefers the weekly scheduled hours from the page divided by 5.
  */
 function getDailyHours(doc, fallbackHours) {
-  const scheduledEl = doc.querySelector(DOMElementSelectorUtil.toSelector(PSA_DOM_ELEMENTS.scheduledHoursTimesheetId));
-  if (scheduledEl) {
-    const weekly = parseFloat(scheduledEl.textContent.replace(',', '.'));
-    if (!isNaN(weekly) && weekly > 0) return (weekly / 5).toString().replace('.', ',');
-  }
+  const scheduledEl = findPSAElement(PSA_DOM_ELEMENTS.scheduledHoursTimesheetId);
+  const weekly = parseHours(scheduledEl?.value ?? scheduledEl?.textContent);
+  if (Number.isFinite(weekly) && weekly > 0) return (weekly / 5).toString().replace('.', ',');
   return fallbackHours.toString().replace('.', ',');
 }
 

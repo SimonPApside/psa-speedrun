@@ -26,6 +26,7 @@ const PSA_DOM_ELEMENTS = Object.freeze({
 
   /** Nombre d'heure d'un la période de saisie */
   scheduledHoursTimesheetId: DOMElementSelectorUtil.id('UC_EX_TIME_HDR_UC_SCHEDULED_HRS'),
+  scheduledHoursReasonId: DOMElementSelectorUtil.id('UC_EX_TIME_HDR_UC_REASON_CODE'),
 
   /** Date de fin de période de la saisie */
   periodDateTimesheetId : DOMElementSelectorUtil.id('EX_TIME_HDR_PERIOD_END_DT'),
@@ -44,6 +45,8 @@ const PSA_DOM_ELEMENTS = Object.freeze({
 
   /** Champs de saisie du code activité */
   activityCodeInputName: DOMElementSelectorUtil.namePrefix('ACTIVITY_CODE'),
+  projectBillingActionId: DOMElementSelectorUtil.idPrefix('BILLING_ACTION'),
+  projectBillingActionName: DOMElementSelectorUtil.namePrefix('BILLING_ACTION'),
 
   /** Champs de repos quotidiens, marqueurs de l’iframe du panneau. */
   dailyRestInputsName: DOMElementSelectorUtil.namePrefix('UC_DAILYREST'),
@@ -86,7 +89,7 @@ const DEFAULT_CURRENT_CONFIG = Object.freeze({
   fridayAM: 'NA', fridayPM: 'NA', fridayActivities: []
 });
 
-const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+const DEFAULT_DAILY_HOURS = 8;
 
 // The default activity code applied when claiming an empty/new project row
 const DEFAULT_ACTIVITY = 'PROJET';

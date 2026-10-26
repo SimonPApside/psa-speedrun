@@ -21,10 +21,28 @@ function getIframeDoc(requiredMarkerSelector = PSA_DOM_ELEMENTS.timesheetTableId
   return null;
 }
 
+/** Finds a PSA element in the top document or in any accessible iframe. */
+function findPSAElement(elementDescriptor) {
+  const selector = DOMElementSelectorUtil.toSelector(elementDescriptor);
+  const directMatch = document.querySelector(selector);
+  if (directMatch) return directMatch;
+
+  for (const frame of document.querySelectorAll('iframe')) {
+    try {
+      const match = frame.contentDocument?.querySelector(selector);
+      if (match) return match;
+    } catch {
+      // Ignore frames that are not accessible from the PSA page.
+    }
+  }
+  return null;
+}
+
 /** Sets an element's value and fires a change event so PSA reacts. */
 function setAndDispatch(el, value) {
   el.value = value;
-  el.dispatchEvent(new Event('change'));
+  const EventConstructor = el.ownerDocument?.defaultView?.Event || Event;
+  el.dispatchEvent(new EventConstructor('change', { bubbles: true }));
 }
 
 /** Sets an element's value only if it's currently empty or zero. */
