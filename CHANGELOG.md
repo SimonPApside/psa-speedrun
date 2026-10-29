@@ -3,6 +3,12 @@
 All notable changes to the PSA Speedrun extension will be documented in this file.
 Toutes les modifications notables apportées à l'extension PSA Speedrun seront documentées dans ce fichier.
 
+## [1.4.1] - 2026-10-29
+
+### Fixed / Corrections
+
+- Ignore public holiday on weekend (#26)
+
 ## [1.4.0] - 2026-10-07
 
 ### Added / Ajouts
@@ -173,6 +179,7 @@ Toutes les modifications notables apportées à l'extension PSA Speedrun seront 
 - **Multi-profile support**: Switch between different project configurations easily.
   - *Support multi-profils : basculement facile entre différentes configurations de projet.*
 
+[1.4.1]: https://github.com/SimonPApside/psa-speedrun/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/SimonPApside/psa-speedrun/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/SimonPApside/psa-speedrun/compare/v1.2.3...v1.3.0
 [1.2.3]: https://github.com/SimonPApside/psa-speedrun/compare/v1.2.2...v1.2.3
